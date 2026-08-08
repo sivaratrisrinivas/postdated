@@ -4,99 +4,211 @@
 > while the doctor is still in the building and the paperwork can still be fixed.**
 
 **Live: [postdated.vercel.app](https://postdated.vercel.app)** ·
-Printable case: [/summary](https://postdated.vercel.app/summary)
+Printable test case: [/summary](https://postdated.vercel.app/summary)
 
-Built for Push to Prod (Anthropic × Elevation Capital, Bengaluru, 8 Aug 2026).
+Built for Push to Prod (Anthropic × Elevation Capital, Bengaluru, 8 August 2026).
 
 ---
 
-## The problem
+## What happens today
 
-Ravi's father has his gallbladder removed. Four nights, ₹2,40,000. The policy covers
-₹5,00,000, so Ravi assumes he's fine. Three weeks later: **₹1,73,000 disallowed.**
+Ravi's father has his gallbladder removed at a private hospital in Bengaluru. Four
+nights. The final bill is ₹2,40,000. The insurance covers up to ₹5,00,000, so Ravi
+assumes he is fine. He pays, takes his father home, and files the claim.
 
-Split the loss by cause and the whole product falls out of it:
+Three weeks later a message arrives. **₹1,73,000 will not be paid.** The insurer will
+pay ₹67,000.
+
+By then the file is closed, the surgeon is on leave, and the ward records have been
+archived. Nothing can be changed.
+
+Now split that ₹1,73,000 by *why* it was refused, because the two halves are completely
+different problems:
 
 | | | |
 |---|---|---|
-| **₹48,000** | He agreed to it and never read it — room-rent excess, proportionate deduction, non-payable consumables | **Gone.** The room was chosen four days ago. |
-| **₹1,25,000** | A form was incomplete — two missing documents and one sentence the doctor never wrote | **Recoverable**, for about forty more minutes |
+| **₹48,000** | Ravi's father was put in a nicer room than the policy allowed, and some items on the bill are never covered by anyone | **Already lost.** The room was chosen four days ago. Nothing can bring this back. |
+| **₹1,25,000** | Two documents were never handed over, and one sentence was never written down | **Recoverable** — but only for about forty more minutes |
 
-Nobody in that story did anything wrong. Three parties are at the table and only one has
-never seen the rules — and that one carries all the loss.
+Read that again: **nobody in this story did anything wrong.** The hospital treated the
+patient. The insurer applied the contract it wrote. Ravi paid his premiums. And
+₹1,25,000 evaporated because a piece of paper was thin and nobody mentioned it while it
+could still be fixed.
 
-Every existing player acts *after* rejection. Nobody occupies the forty-minute window at
-the discharge counter, which is the only moment the document is still editable and the
-doctor is still reachable. That time-shift is the whole wedge.
+That is the real problem. Three parties stand at the table, and only one of them has
+never read the rules — and that one carries all the loss.
+
+**Everyone who works on this problem today works on it after the refusal arrives.**
+Claim consultants, complaint tribunals, appeal services. All of them are downstream of a
+door that has already closed. Nobody is standing at the discharge counter in the forty
+minutes when the document can still be changed and the doctor is still reachable.
+
+Moving to that moment is the entire idea.
 
 ## What it does
 
-Photograph the discharge summary at the counter. The future denial letter renders,
-dated ~26 days ahead, itemised in rupees. Tap a red line and you get the physical ask —
-in English, Kannada or Hindi, sized to hold up to a ward clerk. The doctor writes the
-line in and signs it; the letter shrinks and the total falls.
+Photograph the discharge summary and the bill at the counter. About thirteen seconds
+later, the refusal letter appears on the phone — **dated three weeks in the future**,
+itemised, in rupees.
 
-**The new interaction primitive: a future consequence becomes a present, editable
-artefact.** You don't receive advice. You receive the adversary's own letter, and you
-edit the past until the letter changes.
+Tap any red line and it tells you what to physically do about it, in English, Kannada or
+Hindi, in type large enough to hold the phone up to a ward clerk. There are only ever two
+kinds of instruction:
 
-## The one rule that overrides everything
+1. **Go and ask for a document.** *"Ask the nursing station for the ward's day-by-day
+   record."*
+2. **Ask the doctor a question.** *"Ask the treating doctor to write down why admission
+   was necessary, and sign it."*
 
-**The system never writes a clinical fact.** It has exactly two output types — a demand
-for a document, and a question only the treating doctor can answer and sign. Anything
-else is upcoding-as-a-service.
+The doctor writes the line in and signs it. You photograph the paperwork again. The
+letter shrinks, the fixed lines are struck through, and the total falls.
 
-`lib/guard.ts` enforces it. Every clinical noun in any generated output must appear,
-un-negated, in the photographed record or on a doctor-confirmed list; anything else is
-blocked and converted into a red `ASK THE DOCTOR` item. It reads negation, so the
-seeded summary's *"No history of fever or jaundice"* is not treated as licence to assert
-either. The refusal is a demo beat, not an error path.
+You are not being given advice. You are being handed the other side's letter, and then
+allowed to edit the past until the letter changes.
 
-## Where the line between Claude and code sits
+The lines that cannot be fixed are shown anyway, marked plainly as **"this money is
+gone."** That honesty is doing real work — it is the reason anyone believes the lines
+that *can* be fixed.
 
-**Arithmetic never touches the model**, and we say that on stage.
+## How it works
 
-| Deterministic code | Claude |
-|---|---|
-| The proportionate-deduction ratio and every rupee | Reading a photographed 9pt three-page summary |
-| Sub-limits, co-pay, consumable matching | Judging what a specific payer will find unestablished |
-| Letter versioning and the diff | Writing in a TPA's bureaucratic register |
-| **The fabrication guard** | — |
+```mermaid
+flowchart TB
+    subgraph counter["1 · At the counter, on the phone"]
+        A["Photograph the discharge<br/>summary and the bill"] --> B["Shrink the image first —<br/>hospital wifi is no place to<br/>upload 12 megapixels"]
+    end
 
-Remove Claude and the product does not degrade, it does not exist: there is no API for a
-photographed discharge summary, no structured feed of 40-page policy wordings, and no
-rules engine that can judge whether a clinical narrative satisfies a payer's medical
-officer.
+    subgraph server["2 · On the server · the API key never leaves this box"]
+        C["Claude looks at<br/>the photograph"] --> D["Reports only what it sees:<br/>bill lines, exact quotes,<br/>missing documents,<br/>unanswered questions"]
+    end
 
-## What is honest about the numbers
+    subgraph plain["3 · Ordinary code · no AI anywhere in here"]
+        E["Ignore the bill's own<br/>TOTAL row, or the claim<br/>gets counted twice"] --> F["Apply the policy: what is<br/>cut, by how much, under<br/>which sentence"]
+        F --> G["Separate money already<br/>lost from money still<br/>recoverable"]
+        G --> H["Check every medical word<br/>against the photograph"]
+    end
 
-- The deduction arithmetic implements **Niva Bupa ReAssure 2.0** as written. Its clause
-  names a closed list of four heads — room rent, nursing, practitioners' fees, operation
-  theatre — with no "etc.", so every bill line maps to in-scope or out-of-scope with zero
-  judgement. That is why it was chosen to lead with. See `docs/research/policy-parameters.md`.
-- ReAssure 2.0 imposes **no room-rent cap by default**. The cap exists only because the
-  seeded policy schedule elects Room Type Modification (§4.21). Without that election
-  there is no ratio and no Bucket A — a test pins that.
-- We report **coverage against 40 hand-read public Ombudsman awards**, not accuracy. 24
-  grounds: 4 we see fully, 12 partially, 8 not at all. The three largest grounds are
-  among the 8, because they need the proposal form. So this forecasts **deduction**, not
-  repudiation.
-- The forecast is Claude reasoning like a TPA medical officer, **not calibrated** on real
-  approve/deny pairs — the payers hold those. The false-green rate is unmeasured.
-- The letter is watermarked **PREDICTED — NOT ISSUED BY NIVA BUPA**.
+    subgraph act["4 · Back on the phone, with 40 minutes left"]
+        L["The letter appears,<br/>dated three weeks ahead"] --> M["Tap a red line: what to<br/>ask for, in English,<br/>Kannada or Hindi"]
+        M --> N["The doctor writes the<br/>missing line and signs it"]
+    end
 
-## Repo
+    B --> C
+    D --> E
+    H --> L
+    N -->|"photograph it again —<br/>the letter shrinks"| B
+    H -.->|"a medical word that<br/>is not on the page"| P["Refused, and turned into<br/>ASK THE DOCTOR"]
+
+    style counter fill:#f4f6fa,stroke:#4a5a78
+    style server fill:#fdf3ef,stroke:#c1121f
+    style plain fill:#eef7f0,stroke:#2f7d4f
+    style act fill:#f4f6fa,stroke:#4a5a78
+    style P fill:#fde8e8,stroke:#c1121f
+```
+
+Two things about that picture are the whole design.
+
+**The money is calculated by ordinary code, and we say so out loud.** Claude never
+touches a rupee. It reads a photograph and reports what it sees. Every subtraction,
+every ratio, every total is done by a plain function you can read in about five minutes,
+sitting next to the sentence of the insurance contract it implements. If the arithmetic
+were done by the model, no number on that letter could be defended.
+
+**Everything the model writes is checked against the photograph before it is shown.**
+That is the green box's last step, and the next section is about why.
+
+## The one rule
+
+**The system never writes a medical fact.** Not a symptom, not a diagnosis, not a reason
+for treatment.
+
+This matters more than anything else here. An earlier version of this idea had the app
+improve the wording of the medical record — turning *"patient advised admission"* into
+*"oral treatment failed, intravenous antibiotics required."* That is coaching people to
+inflate medical records for money. It would deserve to be shut down, and one sentence
+from anyone in the room would have ended it.
+
+So the system does two things and no others: it asks for documents, and it asks the
+doctor questions. The doctor answers. The doctor signs. Nobody else writes anything.
+
+`lib/guard.ts` enforces this mechanically. Every medical word in anything the system
+produces must appear on the photographed page, or on a list the doctor has personally
+confirmed. Anything else is refused and turned into a red **ASK THE DOCTOR** note.
+
+It is careful about one thing in particular. The test page says *"No history of fever or
+jaundice."* A naive check would search for the word "fever", find it, and cheerfully let
+the system claim the patient had a fever. This one reads the "no" — so if you ask it to
+add a fever, it refuses and shows you that exact sentence as the reason.
+
+The refusal is not an error page. It is something to demonstrate on purpose.
+
+## Why Claude, specifically
+
+Take Claude out and there is no product left — not a worse one, none.
+
+- **A discharge summary is a piece of paper.** There is no data feed for it, and there
+  never will be. It is nine-point type, three pages, handwriting in the margins,
+  abbreviations, photographed at an angle under bad light. Reading that is the entry
+  point and there is no alternative to it.
+- **Insurance policies are forty-page documents written in prose.** Different per
+  insurer, different per year. There is no table to look up.
+- **The core judgement is not a lookup.** "Would the person who reviews claims at this
+  company accept this as written?" is not recorded anywhere. No rules engine produces it.
+- **Sounding like the insurer is the product.** A letter that reads like a real refusal
+  letter changes behaviour. A friendly warning does not.
+
+## What we are honest about
+
+- **The refusal figures come from one real policy**, read by hand: Niva Bupa ReAssure
+  2.0. It was chosen because its wording lists exactly four charges affected by a room
+  upgrade and then stops — no "and so on". Every line of a bill can be sorted into
+  affected or unaffected with no guesswork. Two competing policies were read and
+  rejected for the comparison: one is wider, and one says "etc.", which means implementing
+  it would mean *deciding* what "etc." covers — and that decision would secretly be the
+  arithmetic.
+- **That policy has no room limit at all by default.** It advertises "we don't limit your
+  choice." The limit exists only because the test customer bought an optional add-on that
+  puts a room category on their certificate. Remove that one line and the ₹48,000 half of
+  this example correctly disappears — there is a test that checks it does.
+- **We do not claim accuracy. We claim coverage.** We hand-read 40 published complaint
+  rulings and counted 24 distinct reasons insurers refuse claims. We can see 4 of them
+  fully, 12 partly, and 8 not at all. The three most common reasons are among the 8 we
+  cannot see, because they need a form signed years before the hospital visit. So this
+  does not predict outright rejection. It predicts the slice quietly shaved off claims
+  that *do* get paid — which is the far more common thing, and which nobody escalates
+  because it is not worth eighteen months of complaint procedure.
+- **The published rulings run 2004 to 2014.** Nothing after about 2016 is available.
+- **This is Claude reasoning like a claims reviewer. It is not trained on real
+  accept/reject decisions**, because the insurers hold those and will not share them. We
+  do not know how often it wrongly says a claim is fine. That number is unmeasured and we
+  say so before anyone asks.
+- **The letter is watermarked.** *PREDICTED — NOT ISSUED BY NIVA BUPA*, across the page
+  and again at the bottom. It is a forecast, and it says so even in a photograph of it.
+- **No medical documents are stored.** A photographed discharge summary can reveal things
+  a patient never consented to share, about a patient who is often sedated. Nothing is
+  kept after the page is closed.
+
+## What is not built
+
+The business is selling this to hospital insurance desks, not to families — the desk
+already pays someone to guess at this by hand, and keeps their guesses in a private Word
+document. That side is described in the pitch and deliberately not built: it was cut on
+purpose to make the consumer half work properly in the time available. See
+`BUILD-TODAY.md` for what was cut and why.
+
+## The files
 
 | Path | |
 |---|---|
-| `DEMO.md` | The runbook — click path, every number, the exact stage words, contingencies |
-| `POSTDATED.md` | The spec. §9 before writing any generating code |
-| `BUILD-TODAY.md` | The solo plan that superseded §11 |
-| `CONTEXT.md` | Glossary, including the four phrasings that are banned and why |
-| `docs/research/` | Two primary-source passes: policy parameters, Ombudsman grounds |
-| `lib/deduct.ts` | All of the arithmetic. 13 tests |
-| `lib/guard.ts` | The fabrication guard. 14 tests |
-| `app/api/extract/route.ts` | The one live model call. Key stays server-side |
+| `DEMO.md` | The runbook — what to click, every number, what to say, what to do when something breaks |
+| `POSTDATED.md` | The full brief this was built from |
+| `BUILD-TODAY.md` | What got cut when it became a one-person build, and why |
+| `CONTEXT.md` | The shared vocabulary, including four phrases we never use and the specific damage each one does |
+| `docs/research/` | Two research passes against original sources: the policy wordings, and the complaint rulings |
+| `lib/deduct.ts` | Every calculation. 24 tests |
+| `lib/guard.ts` | The check that stops the system inventing medical facts. 14 tests |
+| `lib/policy.ts` | The policy, as read by hand from the wording |
+| `app/api/extract/route.ts` | The one place Claude is called. The key stays server-side |
 
 ## Running it
 
@@ -107,5 +219,5 @@ npm run dev
 npm test
 ```
 
-Without a key the extract route falls back to the committed fixture rather than failing —
-the demo runs either way.
+Without a key, the app falls back to a saved example rather than breaking — so the demo
+runs on a dead network.
