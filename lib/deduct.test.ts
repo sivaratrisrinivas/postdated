@@ -147,14 +147,14 @@ describe('computeForecast — a live read is messier than the fixture', () => {
   const verbose: Extraction = {
     ...ravi,
     missing_documents: [
-      'Indoor case papers / nursing notes',
-      'Itemised pharmacy bill with day-wise breakup',
-      'USG abdomen report',
-      'Payment receipts',
+      'Indoor case papers (day-by-day nursing and treatment record)',
+      'Itemised pharmacy and consumables breakup',
+      'Invoice and batch sticker for endoclips and trocar',
     ],
     unestablished: [
-      'Why a Deluxe Single Room category was medically necessary',
-      'Which physicians other than the operating surgeon attended',
+      'Why inpatient admission of 4 nights was required',
+      'Whether the Deluxe Single Room category was medically necessary or the only room available',
+      "Whether the pre-existing diabetes noted as 'since 15 years' was disclosed at inception",
     ],
   };
 
@@ -167,8 +167,26 @@ describe('computeForecast — a live read is messier than the fixture', () => {
 
   it('leaves off every item it has no exposure figure for', () => {
     const reasons = computeForecast(verbose, NIVA_BUPA_REASSURE_2).lines.map((l) => l.reason);
-    expect(reasons.some((r) => r.includes('Payment receipts'))).toBe(false);
-    expect(reasons.some((r) => r.includes('USG abdomen'))).toBe(false);
+    expect(reasons.some((r) => r.includes('batch sticker'))).toBe(false);
+    expect(reasons.some((r) => r.includes('pharmacy and consumables'))).toBe(false);
+  });
+
+  it('does not disallow the same money twice when one argument is phrased two ways', () => {
+    // "why inpatient admission was required" and "whether the room category was
+    // medically necessary" are one dispute about one pot. Both matching would double it.
+    const admission = computeForecast(verbose, NIVA_BUPA_REASSURE_2).lines.filter((l) =>
+      l.reason.startsWith('Summary does not establish'),
+    );
+    expect(admission).toHaveLength(1);
+    expect(admission[0]?.amount).toBe(40_000);
+  });
+
+  it('prints the better-phrased of the two, which is the one ranked first', () => {
+    const line = computeForecast(verbose, NIVA_BUPA_REASSURE_2).lines.find((l) =>
+      l.reason.startsWith('Summary does not establish'),
+    );
+    expect(line?.reason).toContain('inpatient admission');
+    expect(line?.reason).not.toContain('only room available');
   });
 
   it('keeps the letter to five lines, not nineteen', () => {

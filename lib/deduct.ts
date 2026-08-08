@@ -147,44 +147,54 @@ function nonPayableConsumables(extraction: Extraction): Disallowance[] {
  * physical ask, and the two kinds of ask are the only outputs this system produces.
  */
 function recoverable(extraction: Extraction, residual: number): Disallowance[] {
-  const candidates: Disallowance[] = [
-    ...extraction.missing_documents.map(
-      (doc): Disallowance => ({
-        bucket: 'C',
+  const candidates = [
+    ...extraction.missing_documents.map((doc) => ({
+      exposure: exposureFor(doc),
+      line: {
+        bucket: 'C' as const,
         reason: `${doc} not submitted`,
-        amount: exposureFor(doc),
+        amount: 0,
         basis: `The payer treats the charges this record substantiates as unproven without it.`,
         action: documentDemandFor(doc),
-      }),
-    ),
-    ...extraction.unestablished.map(
-      (item): Disallowance => ({
-        bucket: 'C',
+      },
+    })),
+    ...extraction.unestablished.map((item) => ({
+      exposure: exposureFor(item),
+      line: {
+        bucket: 'C' as const,
         reason: `Summary does not establish: ${item.toLowerCase()}`,
-        amount: exposureFor(item),
+        amount: 0,
         basis:
           'Only the treating doctor can answer this, and only the doctor can sign it. ' +
           'The system does not write it.',
         action: doctorQuestionFor(item),
-      }),
-    ),
+      },
+    })),
   ];
 
-  // A live read surfaces far more queryable items than a letter can carry, and most
-  // carry no exposure figure. Highest exposure first, and anything with no figure is
-  // dropped rather than printed as a ₹0 red line.
-  const ranked = candidates.filter((l) => l.amount > 0).sort((a, b) => b.amount - a.amount);
-
-  // Take lines in order until the residual is exhausted; trim the one that crosses.
+  /*
+   * A live read surfaces far more queryable items than a letter can carry, and it often
+   * phrases the same argument two or three ways — "why inpatient admission was required"
+   * and "whether the room category was medically necessary" are one dispute about one pot
+   * of money. Both matching would disallow that money twice.
+   *
+   * So: drop anything with no exposure figure, then keep at most one item per pot,
+   * preferring the one the model ranked first. It orders by consequence, which is also
+   * the better line to print.
+   */
+  const claimed = new Set<string>();
   const kept: Disallowance[] = [];
   let left = Math.max(0, residual);
-  for (const line of ranked) {
-    if (left === 0) break;
-    const amount = Math.min(line.amount, left);
+
+  for (const { exposure, line } of candidates) {
+    if (!exposure || claimed.has(exposure.id) || left === 0) continue;
+    claimed.add(exposure.id);
+    const amount = Math.min(exposure.amount, left);
     kept.push({ ...line, amount });
     left -= amount;
   }
-  return kept;
+
+  return kept.sort((a, b) => b.amount - a.amount);
 }
 
 /**

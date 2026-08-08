@@ -12,16 +12,27 @@
  * A red line with no rupees against it is not a disallowance, it is noise — and inventing
  * a number to fill it would be the one thing this whole design refuses to do.
  */
-const SEEDED_EXPOSURE: ReadonlyArray<{ matches: readonly string[]; amount: number }> = [
+const SEEDED_EXPOSURE: ReadonlyArray<{
+  /** Distinct pot of money. Two extracted items must never both claim the same one. */
+  id: string;
+  matches: readonly string[];
+  amount: number;
+}> = [
   {
-    // A live read of the same page phrased this as "Indoor case papers / nursing notes",
-    // so the lookup matches on the phrase rather than on string equality.
-    matches: ['indoor case papers', 'nursing notes', 'ward notes', 'day-wise treatment record'],
+    id: 'ward_record',
+    // A live read of the same page phrased this as "Indoor case papers / nursing notes"
+    // and as "Indoor case papers (day-by-day nursing and treatment record)", so the
+    // lookup matches on phrases rather than on string equality.
+    matches: ['indoor case papers', 'nursing notes', 'ward notes', 'day wise treatment record'],
     amount: 85_000,
   },
   {
+    id: 'admission_necessity',
+    // Live reads phrase this several ways: "Why inpatient admission of 4 nights was
+    // required", "Whether the Deluxe Single Room category was medically necessary".
+    // They are the same argument about the same money, which is why they share an id.
     matches: [
-      'inpatient admission was required',
+      'inpatient admission',
       'why admission',
       'medically necessary',
       'medical necessity',
@@ -32,9 +43,15 @@ const SEEDED_EXPOSURE: ReadonlyArray<{ matches: readonly string[]; amount: numbe
   },
 ];
 
-export function exposureFor(item: string): number {
+export interface Exposure {
+  id: string;
+  amount: number;
+}
+
+export function exposureFor(item: string): Exposure | null {
   const needle = normalise(item);
-  return SEEDED_EXPOSURE.find((e) => e.matches.some((m) => needle.includes(normalise(m))))?.amount ?? 0;
+  const hit = SEEDED_EXPOSURE.find((e) => e.matches.some((m) => needle.includes(normalise(m))));
+  return hit ? { id: hit.id, amount: hit.amount } : null;
 }
 
 /** Punctuation and casing vary between a hand-written fixture and a live read. */
