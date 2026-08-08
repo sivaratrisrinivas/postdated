@@ -103,6 +103,90 @@ describe('computeForecast — Niva Bupa proportionate deduction', () => {
   });
 });
 
+describe('computeForecast — a photographed bill has a TOTAL row on it', () => {
+  // Found by testing the live vision call against the printed page: it read
+  // "TOTAL PAYABLE 2,40,000" as an eleventh line item, which doubled the claimed
+  // amount to ₹4,80,000 and would have put a wrong figure on the letter.
+  const withTotalRow: Extraction = {
+    ...ravi,
+    bill_lines: [...ravi.bill_lines, { head: 'misc', label: 'TOTAL PAYABLE', amount: 240_000 }],
+  };
+
+  it('does not double the claim when the total row is extracted as a line', () => {
+    expect(computeForecast(withTotalRow, NIVA_BUPA_REASSURE_2).claimed).toBe(240_000);
+  });
+
+  it('produces the same forecast with or without the total row', () => {
+    const a = computeForecast(ravi, NIVA_BUPA_REASSURE_2);
+    const b = computeForecast(withTotalRow, NIVA_BUPA_REASSURE_2);
+    expect(b.disallowed).toBe(a.disallowed);
+    expect(b.approved).toBe(a.approved);
+  });
+
+  it('catches a subtotal row by its arithmetic, whatever it is labelled', () => {
+    const oddLabel: Extraction = {
+      ...ravi,
+      bill_lines: [...ravi.bill_lines, { head: 'misc', label: 'Net amount due', amount: 240_000 }],
+    };
+    expect(computeForecast(oddLabel, NIVA_BUPA_REASSURE_2).claimed).toBe(240_000);
+  });
+
+  it('keeps a genuine line that merely happens to be large', () => {
+    const bigButReal: Extraction = {
+      ...ravi,
+      bill_lines: [...ravi.bill_lines, { head: 'implants_devices', label: 'Stent', amount: 60_000 }],
+    };
+    expect(computeForecast(bigButReal, NIVA_BUPA_REASSURE_2).claimed).toBe(300_000);
+  });
+});
+
+describe('computeForecast — a live read is messier than the fixture', () => {
+  // The live vision call on the printed page returned ten missing documents and nine
+  // unestablished statements. A letter cannot carry nineteen red lines, and most of them
+  // have no exposure figure behind them.
+  const verbose: Extraction = {
+    ...ravi,
+    missing_documents: [
+      'Indoor case papers / nursing notes',
+      'Itemised pharmacy bill with day-wise breakup',
+      'USG abdomen report',
+      'Payment receipts',
+    ],
+    unestablished: [
+      'Why a Deluxe Single Room category was medically necessary',
+      'Which physicians other than the operating surgeon attended',
+    ],
+  };
+
+  it('still resolves the indoor case papers when the live read renames them', () => {
+    const line = computeForecast(verbose, NIVA_BUPA_REASSURE_2).lines.find((l) =>
+      l.reason.includes('Indoor case papers'),
+    );
+    expect(line?.amount).toBe(85_000);
+  });
+
+  it('leaves off every item it has no exposure figure for', () => {
+    const reasons = computeForecast(verbose, NIVA_BUPA_REASSURE_2).lines.map((l) => l.reason);
+    expect(reasons.some((r) => r.includes('Payment receipts'))).toBe(false);
+    expect(reasons.some((r) => r.includes('USG abdomen'))).toBe(false);
+  });
+
+  it('keeps the letter to five lines, not nineteen', () => {
+    expect(computeForecast(verbose, NIVA_BUPA_REASSURE_2).lines).toHaveLength(5);
+  });
+
+  it('reaches the same headline as the fixture', () => {
+    expect(computeForecast(verbose, NIVA_BUPA_REASSURE_2).disallowed).toBe(173_000);
+  });
+
+  it('orders the recoverable lines by what they cost', () => {
+    const bucketC = computeForecast(verbose, NIVA_BUPA_REASSURE_2).lines.filter(
+      (l) => l.bucket === 'C',
+    );
+    expect(bucketC.map((l) => l.amount)).toEqual([85_000, 40_000]);
+  });
+});
+
 describe('computeForecast — the schedule election is load-bearing', () => {
   const noElection: Policy = {
     ...NIVA_BUPA_REASSURE_2,

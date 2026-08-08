@@ -1,7 +1,7 @@
 import { documentDemandFor, doctorQuestionFor } from './asks';
 import { exposureFor } from './exposure';
 import { NON_PAYABLE_CONSUMABLES, type Policy } from './policy';
-import type { Disallowance, Extraction, Forecast } from './types';
+import type { BillLine, Disallowance, Extraction, Forecast } from './types';
 
 /** POSTDATED.md §4: the letter is dated ~26 days ahead. */
 const FORWARD_DAYS = 26;
@@ -12,10 +12,11 @@ const FORWARD_DAYS = 26;
  * is the thing that makes it true.
  */
 export function computeForecast(
-  extraction: Extraction,
+  rawExtraction: Extraction,
   policy: Policy,
   dischargeDate: Date = new Date(),
 ): Forecast {
+  const extraction = { ...rawExtraction, bill_lines: withoutSubtotals(rawExtraction.bill_lines) };
   const claimed = extraction.bill_lines.reduce((sum, l) => sum + l.amount, 0);
 
   const lines: Disallowance[] = [
@@ -169,16 +170,37 @@ function recoverable(extraction: Extraction, residual: number): Disallowance[] {
     ),
   ];
 
+  // A live read surfaces far more queryable items than a letter can carry, and most
+  // carry no exposure figure. Highest exposure first, and anything with no figure is
+  // dropped rather than printed as a ₹0 red line.
+  const ranked = candidates.filter((l) => l.amount > 0).sort((a, b) => b.amount - a.amount);
+
   // Take lines in order until the residual is exhausted; trim the one that crosses.
   const kept: Disallowance[] = [];
   let left = Math.max(0, residual);
-  for (const line of candidates) {
+  for (const line of ranked) {
     if (left === 0) break;
     const amount = Math.min(line.amount, left);
     kept.push({ ...line, amount });
     left -= amount;
   }
   return kept;
+}
+
+/**
+ * A photographed final bill has a TOTAL row printed on it, and a vision model reading
+ * every row will hand that back as a line item — which silently doubles the claim.
+ *
+ * Caught by arithmetic rather than by wording: drop any row whose amount equals the sum
+ * of all the others. That holds for "TOTAL PAYABLE", "Net amount due", "Grand Total" and
+ * whatever else a given hospital prints, and it cannot be fooled by a genuinely large
+ * line item. Belongs here and not in the prompt for the same reason everything else here
+ * does — the model should not be the thing standing between a photograph and a rupee
+ * figure on the letter.
+ */
+function withoutSubtotals(lines: readonly BillLine[]): BillLine[] {
+  const total = lines.reduce((sum, l) => sum + l.amount, 0);
+  return lines.filter((line) => line.amount === 0 || line.amount * 2 !== total);
 }
 
 function headTotal(extraction: Extraction, heads: readonly string[]): number {
