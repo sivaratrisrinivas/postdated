@@ -20,6 +20,17 @@ const LANGUAGES = [
 
 type LanguageCode = (typeof LANGUAGES)[number]['code'];
 
+/**
+ * Indic scripts get their bundled face. Without it the Kannada conjuncts shape as
+ * separate glyphs on any device lacking a system Kannada font, which is visibly wrong
+ * to the clerk this sheet is held up to.
+ */
+const FONT_FOR: Record<LanguageCode, string> = {
+  en: 'var(--font-geist-sans)',
+  kn: 'var(--font-kannada), var(--font-geist-sans)',
+  hi: 'var(--font-devanagari), var(--font-geist-sans)',
+};
+
 export interface AskSheetProps {
   line: Disallowance;
   onResolve: (reason: string) => void;
@@ -82,7 +93,11 @@ export function AskSheet({ line, onResolve, onClose }: AskSheetProps) {
             </div>
 
             {/* Hold-up-to-a-clerk view. Nothing else competes with it. */}
-            <p className="px-5 py-6 text-[1.4rem] font-semibold leading-snug tracking-tight text-[#1A1A1A]">
+            <p
+              lang={lang}
+              style={{ fontFamily: FONT_FOR[lang] }}
+              className="px-5 py-6 text-[1.4rem] font-semibold leading-relaxed tracking-tight text-[#1A1A1A]"
+            >
               {askIn(action, lang)}
             </p>
           </>

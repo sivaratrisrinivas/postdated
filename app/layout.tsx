@@ -1,9 +1,34 @@
 import type { Metadata, Viewport } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import {
+  Geist,
+  Geist_Mono,
+  Noto_Sans_Devanagari,
+  Noto_Sans_Kannada,
+} from 'next/font/google';
 import './globals.css';
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] });
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] });
+
+/**
+ * The ask sheet is held up to a ward clerk in Bengaluru, so the Kannada has to shape
+ * correctly on whatever phone is in the room. Without a bundled Kannada face the
+ * conjuncts break apart into separate glyphs, which is visibly wrong to any reader.
+ * Same reasoning for Devanagari.
+ */
+const kannada = Noto_Sans_Kannada({
+  variable: '--font-kannada',
+  subsets: ['kannada'],
+  weight: ['400', '600'],
+  display: 'swap',
+});
+
+const devanagari = Noto_Sans_Devanagari({
+  variable: '--font-devanagari',
+  subsets: ['devanagari'],
+  weight: ['400', '600'],
+  display: 'swap',
+});
 
 export const metadata: Metadata = {
   title: 'POSTDATED — the rejection letter, three weeks early',
@@ -22,7 +47,10 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+    <html
+      lang="en"
+      className={`${geistSans.variable} ${geistMono.variable} ${kannada.variable} ${devanagari.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>
   );

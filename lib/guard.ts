@@ -11,7 +11,20 @@
 
 export type Verdict =
   | { allowed: true; reason: 'no_clinical_claim' | 'affirmed_in_source' | 'doctor_confirmed' | 'is_a_question' }
-  | { allowed: false; blocked_terms: string[]; ask_the_doctor: string };
+  | {
+      allowed: false;
+      blocked_terms: string[];
+      /**
+       * Term → the sentence in the record that mentions it only to rule it out.
+       * Absent for terms the record never mentions at all.
+       *
+       * This distinction matters on stage: "fever is not in the record" invites a judge
+       * to point out that it is. "The record says 'No history of fever or jaundice'"
+       * demonstrates that the guard reads negation, which is the stronger claim.
+       */
+      negations: Record<string, string>;
+      ask_the_doctor: string;
+    };
 
 /**
  * Clinical vocabulary the system might plausibly be pushed into asserting. Not a
@@ -71,9 +84,18 @@ export function guard(
   }
 
   const confirmed = doctorConfirmed.map((t) => t.toLowerCase());
-  const blocked = claimed.filter(
-    (term) => !confirmed.includes(term.toLowerCase()) && !affirmedIn(sourceDocument, term),
-  );
+  const blocked: string[] = [];
+  const negations: Record<string, string> = {};
+
+  for (const term of claimed) {
+    if (confirmed.includes(term.toLowerCase())) continue;
+
+    const support = supportFor(sourceDocument, term);
+    if (support.affirmed) continue;
+
+    blocked.push(term);
+    if (support.negated_by) negations[term] = support.negated_by;
+  }
 
   if (blocked.length === 0) {
     return {
@@ -85,6 +107,7 @@ export function guard(
   return {
     allowed: false,
     blocked_terms: blocked,
+    negations,
     ask_the_doctor:
       `ASK THE DOCTOR: does the record establish ${blocked.join(', ')}? ` +
       'Only the treating doctor can answer this, and only the doctor can sign it.',
@@ -129,21 +152,43 @@ function mentions(text: string, term: string): boolean {
 /**
  * Present *and* not negated. The seeded summary says "No history of fever or jaundice";
  * a plain substring match would read that as licence to assert both.
+ *
+ * When the only mentions are negated, the negating sentence comes back so callers can
+ * quote the record rather than claim the term is absent from it.
  */
-function affirmedIn(source: string, term: string): boolean {
+function supportFor(
+  source: string,
+  term: string,
+): { affirmed: boolean; negated_by?: string } {
   const pattern = term.split(/\s+/).map(escapeRegExp).join('\\s+');
   const re = new RegExp(pattern, 'gi');
   const haystack = source.replace(/\s+/g, ' ');
 
-  let sawMention = false;
+  let negatedBy: string | undefined;
+
   for (const match of haystack.matchAll(re)) {
-    sawMention = true;
-    const before = haystack.slice(Math.max(0, match.index - NEGATION_WINDOW), match.index).toLowerCase();
+    const before = haystack
+      .slice(Math.max(0, match.index - NEGATION_WINDOW), match.index)
+      .toLowerCase();
+
     if (!NEGATION_CUES.some((cue) => before.includes(cue))) {
-      return true; // one un-negated mention is enough
+      return { affirmed: true }; // one un-negated mention is enough
     }
+    negatedBy ??= sentenceAround(haystack, match.index);
   }
-  return sawMention ? false : false;
+
+  return { affirmed: false, negated_by: negatedBy };
+}
+
+/** The sentence containing a given offset, so the record can be quoted verbatim. */
+function sentenceAround(text: string, index: number): string {
+  const start = Math.max(
+    text.lastIndexOf('.', index) + 1,
+    text.lastIndexOf('\n', index) + 1,
+  );
+  const dot = text.indexOf('.', index);
+  const end = dot === -1 ? text.length : dot + 1;
+  return text.slice(start, end).trim();
 }
 
 function escapeRegExp(s: string): string {

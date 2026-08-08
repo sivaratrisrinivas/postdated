@@ -90,6 +90,22 @@ describe('guard — leaves the two permitted output types alone', () => {
   });
 });
 
+describe('guard — quotes the record back instead of claiming a term is absent', () => {
+  it('names the negating sentence for a term the record rules out', () => {
+    // Saying "fever is not in the record" invites a judge to point out that it is.
+    // Quoting "No history of fever or jaundice" shows the guard reads negation.
+    const verdict = guard('Patient had a fever on admission.', SEEDED_SUMMARY_TEXT);
+    if (verdict.allowed) throw new Error('expected a block');
+    expect(verdict.negations['fever']).toContain('No history of fever');
+  });
+
+  it('carries no negation for a term the record never mentions', () => {
+    const verdict = guard('Findings consistent with sepsis.', SEEDED_SUMMARY_TEXT);
+    if (verdict.allowed) throw new Error('expected a block');
+    expect(verdict.negations['sepsis']).toBeUndefined();
+  });
+});
+
 describe('guard — a doctor may add what the system may not', () => {
   it('allows a term once the treating doctor has confirmed and signed it', () => {
     const verdict = guard('Patient had a fever on admission.', SEEDED_SUMMARY_TEXT, ['fever']);

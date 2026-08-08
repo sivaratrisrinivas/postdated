@@ -1,3 +1,4 @@
+import { documentDemandFor, doctorQuestionFor } from './asks';
 import { exposureFor } from './exposure';
 import { NON_PAYABLE_CONSUMABLES, type Policy } from './policy';
 import type { Disallowance, Extraction, Forecast } from './types';
@@ -152,12 +153,7 @@ function recoverable(extraction: Extraction, residual: number): Disallowance[] {
         reason: `${doc} not submitted`,
         amount: exposureFor(doc),
         basis: `The payer treats the charges this record substantiates as unproven without it.`,
-        action: {
-          kind: 'document_demand',
-          ask: `Ask the nursing station for the ${doc.toLowerCase()} before you leave.`,
-          ask_kn: `ಹೊರಡುವ ಮೊದಲು ನರ್ಸಿಂಗ್ ಸ್ಟೇಷನ್‌ನಿಂದ ${doc} ಕೇಳಿ.`,
-          ask_hi: `जाने से पहले नर्सिंग स्टेशन से ${doc} मांगें।`,
-        },
+        action: documentDemandFor(doc),
       }),
     ),
     ...extraction.unestablished.map(
@@ -168,12 +164,7 @@ function recoverable(extraction: Extraction, residual: number): Disallowance[] {
         basis:
           'Only the treating doctor can answer this, and only the doctor can sign it. ' +
           'The system does not write it.',
-        action: {
-          kind: 'doctor_question',
-          ask: `Ask the treating doctor: does the record state ${item.toLowerCase()}?`,
-          ask_kn: `ಚಿಕಿತ್ಸೆ ನೀಡುವ ವೈದ್ಯರನ್ನು ಕೇಳಿ: ದಾಖಲೆಯಲ್ಲಿ ಇದನ್ನು ಬರೆಯಲಾಗಿದೆಯೇ?`,
-          ask_hi: `इलाज करने वाले डॉक्टर से पूछें: क्या रिकॉर्ड में यह लिखा है?`,
-        },
+        action: doctorQuestionFor(item),
       }),
     ),
   ];

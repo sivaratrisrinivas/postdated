@@ -79,13 +79,27 @@ export function GuardPanel({ sourceText }: { sourceText: string }) {
               <p className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.14em] text-[#FF8A8D]">
                 Blocked
               </p>
-              <p className="mt-1.5 text-[0.84rem] leading-snug text-white/85">
-                <span className="font-mono font-bold text-[#FF8A8D]">
-                  {verdict.blocked_terms.join(', ')}
-                </span>{' '}
-                {verdict.blocked_terms.length === 1 ? 'does' : 'do'} not appear in the record,
-                so the system will not write {verdict.blocked_terms.length === 1 ? 'it' : 'them'}.
-              </p>
+              <ul className="mt-1.5 space-y-2">
+                {verdict.blocked_terms.map((term) => {
+                  const negation = verdict.negations[term];
+                  return (
+                    <li key={term} className="text-[0.84rem] leading-snug text-white/85">
+                      <span className="font-mono font-bold text-[#FF8A8D]">{term}</span>{' '}
+                      {negation ? (
+                        <>
+                          appears in the record only to be ruled out, so it is not
+                          established:
+                          <span className="mt-1.5 block border-l-2 border-[#FF8A8D]/40 pl-2.5 font-mono text-[0.74rem] leading-snug text-white/60">
+                            &ldquo;{negation}&rdquo;
+                          </span>
+                        </>
+                      ) : (
+                        <>is nowhere in the record, so the system will not write it.</>
+                      )}
+                    </li>
+                  );
+                })}
+              </ul>
               <p className="mt-3 rounded-lg bg-black/35 px-3 py-2.5 font-mono text-[0.72rem] leading-relaxed text-[#FFB3B5]">
                 {verdict.ask_the_doctor}
               </p>

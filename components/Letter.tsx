@@ -56,13 +56,22 @@ export function Letter({ forecast, resolved, onTapLine }: LetterProps) {
  * question the spec does not already answer.
  */
 function Watermark() {
+  // Tiled rather than centred. A single centred stamp lands mid-list on a letter this
+  // tall and fights whichever line it hits; repeating it faintly reads as a watermark
+  // everywhere and competes with nothing.
   return (
-    <div aria-hidden className="pointer-events-none absolute inset-0 flex items-center justify-center">
-      <span className="-rotate-[24deg] whitespace-nowrap text-center font-mono text-[clamp(1rem,4.5vw,1.75rem)] font-bold uppercase leading-tight tracking-[0.12em] text-[#C1121F]/12">
-        Predicted — not issued
-        <br />
-        by Niva Bupa
-      </span>
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-0 flex flex-col justify-around overflow-hidden"
+    >
+      {Array.from({ length: 6 }, (_, i) => (
+        <span
+          key={i}
+          className="-rotate-[24deg] whitespace-nowrap text-center font-mono text-[0.72rem] font-bold uppercase tracking-[0.3em] text-[#C1121F]/[0.055]"
+        >
+          Predicted · not issued by Niva Bupa · Predicted · not issued by Niva Bupa
+        </span>
+      ))}
     </div>
   );
 }
