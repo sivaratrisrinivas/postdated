@@ -204,20 +204,78 @@ purpose to make the consumer half work properly in the time available. See
 | `POSTDATED.md` | The full brief this was built from |
 | `BUILD-TODAY.md` | What got cut when it became a one-person build, and why |
 | `CONTEXT.md` | The shared vocabulary, including four phrases we never use and the specific damage each one does |
+| `public/samples/` | The test paperwork: a photograph to upload, and an A4 PDF to print |
 | `docs/research/` | Two research passes against original sources: the policy wordings, and the complaint rulings |
 | `lib/deduct.ts` | Every calculation. 24 tests |
 | `lib/guard.ts` | The check that stops the system inventing medical facts. 14 tests |
 | `lib/policy.ts` | The policy, as read by hand from the wording |
 | `app/api/extract/route.ts` | The one place Claude is called. The key stays server-side |
 
-## Running it
+## Trying it in one minute, without installing anything
+
+The test case is a fictional patient, so there is nothing sensitive in these files.
+
+1. Open **[postdated.vercel.app](https://postdated.vercel.app)** — on a phone if you have
+   one to hand.
+2. Download the sample paperwork:
+   **[discharge-summary-photo.jpg](https://postdated.vercel.app/samples/discharge-summary-photo.jpg)**
+   — a photograph of the printed page, taken at a slight angle in poor light, which is
+   what the real input looks like. On a phone, long-press the image and save it.
+3. Tap **Photograph the discharge summary**, and pick that file instead of taking a photo.
+4. Wait about fifteen seconds without tapping anything. You should get:
+
+   ```
+   Amount claimed      ₹2,40,000
+   Amount approved        ₹67,000
+   TOTAL DISALLOWED    ₹1,73,000     ← five red lines below it
+   ```
+
+   The small line above the letter should read **"read live from the photograph"**. If it
+   says "seeded case" instead, the network or the key failed and you are seeing the saved
+   example — everything still works, it just did not read your file.
+5. Tap the **₹85,000** line. Switch to **ಕನ್ನಡ**. That is the sheet you would hold up to
+   a ward clerk.
+6. Tap **Ward handed it over**. The total should fall to **₹88,000** and that line should
+   turn green and strike through.
+7. Scroll down to **Fabrication guard** and tap *"Patient had a fever on admission"*. It
+   refuses, and shows you the sentence on the page that made it refuse.
+
+**Want the paper version?** Print
+**[discharge-summary.pdf](https://postdated.vercel.app/samples/discharge-summary.pdf)** at
+A4, 100% scale. It fits one sheet on purpose, so the whole thing lands in a single
+photograph. Lay it on a table and use the camera for real.
+
+## Running it on your own machine
+
+**You need:** Node.js 20 or newer, and — optionally — an Anthropic API key from
+[console.anthropic.com](https://console.anthropic.com). Without a key it still runs; it
+just shows the saved example instead of reading your photo.
 
 ```sh
+# 1 — get the code
+git clone https://github.com/sivaratrisrinivas/postdated.git
+cd postdated
+
+# 2 — install (about a minute)
 npm install
-echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env.local   # or: vercel env pull .env.local
+
+# 3 — add your key, if you have one
+echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env.local
+
+# 4 — start it
 npm run dev
-npm test
 ```
 
-Without a key, the app falls back to a saved example rather than breaking — so the demo
-runs on a dead network.
+Then open **http://localhost:3000** and follow steps 3 to 7 above. The sample files are
+already in the repo at `public/samples/`, so you can pick them straight off disk.
+
+Two other things worth running:
+
+```sh
+npm test          # 38 tests. The money and the medical-word check are both covered
+npm run build     # what gets deployed
+```
+
+If you want to read one file to understand the whole thing, read `lib/deduct.ts`. It is
+every calculation the letter is based on, and each one sits next to the sentence of the
+insurance contract it comes from.
