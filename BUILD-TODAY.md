@@ -47,6 +47,55 @@ one beat beats a demo that doesn't run.
   for one person over 160 minutes is pure overhead — assignment exists to prevent collisions, and
   there's no one to collide with. This file is the ticket list.
 
+## The honesty beat, revised — research came back different
+
+§12 hoped for *"14 grounds, our checklist fires on 12."* The actual hand-read of 40 Ombudsman
+awards (`docs/research/ombudsman-repudiation-grounds.md`) says **24 grounds — 4 YES, 12 PARTIAL,
+8 NO**, and the three largest by volume are all NO:
+
+| Ground | Awards | Detectable? |
+|---|---|---|
+| Pre-existing disease | 15 / 40 | **No** — needs the proposal form |
+| Non-disclosure at proposal | 6 / 40 | **No** — needs the proposal form |
+| Break in continuity / premium lapse | 5 / 40 | **No** — needs the inception date |
+
+26 of 40 awards, invisible from a discharge summary. Put the original slide up and a judge does
+the arithmetic against you.
+
+**The reframe — and it is the honest one.** The Ombudsman corpus is *disputes*: full repudiations
+severe enough that someone spent 18 months escalating. That is a different population from the one
+this product serves — **partial disallowances on claims that get paid**, which nobody escalates
+because ₹1.25L isn't worth 18 months. The corpus was measuring the wrong thing, and finding that
+out is the result.
+
+> **Say this:** "We hand-read 40 Ombudsman awards. Twenty-four grounds. The three biggest —
+> pre-existing disease, non-disclosure, lapsed premium — are 26 of those 40, and we cannot see a
+> single one of them. They need the proposal form, not the discharge summary.
+>
+> So we don't forecast repudiation. Those claims are already lost, and they're already litigated.
+> We forecast **deduction** — the 10–40% shaved off claims that *do* get paid. One award: ₹28,000
+> cut from ₹69,511 for disposables and devices. Of the grounds that produce those, we see four
+> fully and twelve partially."
+
+That is a smaller claim than §12 planned and a much harder one to knock over. Volunteering the miss
+is the entire move.
+
+**Volunteer the date range too:** the published awards run 2004–2014; nothing after ~2016 exists
+to read (Book21+ is 404). Say it before someone asks.
+
+**Free micro-beat, ~15 min, add it back first if a box comes in early:** the product cannot
+*adjudicate* pre-existing disease, but it can detect the **trigger phrase** — insurers lift
+`k/c/o DM since 15 years` verbatim out of the summary to justify a PED repudiation. So:
+*"we can't tell you whether they'll reject it — we can tell you the exact sentence in your own
+paperwork they'll use to do it."* Cheap, and it's the most striking line the product can produce.
+
+## One correction to the order above
+
+Timebox the vision step to **15 minutes, not 40**. Its real job is to produce **one good JSON
+output that becomes the committed fixture**. If it isn't producing usable JSON by then, hand-write
+the fixture and move on — everything downstream builds against the fixture either way, and the
+letter is the hero. You want a demoable artefact by 14:30, not a perfect parser by 15:20.
+
 ## Still true, still non-negotiable
 
 - The system **never writes a clinical fact** (§9). Document demands and doctor-questions only.
