@@ -20,7 +20,7 @@ file.
 |---|---|---|
 | **0:00–0:20** | Read the SMS aloud. *"₹1,73,000 disallowed."* Three weeks after discharge. File closed, doctor on leave. | — |
 | **0:20–0:35** | **Photograph the printed summary on the table.** | Reading the page… |
-| **0:35–1:10** | Say nothing. Let it render. | Letter. **03 Sept 2026** at the top. **₹1,73,000** in red. Five lines. |
+| **0:35–1:10** | Say nothing for ~13 seconds. Let it render. Then read the provenance line aloud: *"read live from the photograph."* | Letter. **03 Sept 2026** at the top. **₹1,73,000** in red. Five lines. |
 | **1:10–1:30** | Tap **₹85,000 — Indoor case papers not submitted**. Switch to **ಕನ್ನಡ**. Hold the phone up to your "ward clerk". | The Kannada ask, one instruction, large. |
 | **1:30–1:50** | Doctor writes the line in by hand and signs. Tap **Ward handed it over**. | **₹1,73,000 → ₹88,000.** Approved rises to **₹1,52,000**. The ₹85,000 line goes green and strikes through. |
 | **1:50–2:10** | The honesty beat. Read it off the coverage panel. | 4 / 12 / 8 |
@@ -108,10 +108,29 @@ what "etc." means, and that choice would be the arithmetic.
 | Guard misbehaves on a judge's phrase | Tap one of the three chips instead. §14 permits demonstrating the rule on a known phrase. |
 | A judge says "fever is right there on the page" | **This is the best question you will get.** The record says *"No history of fever or jaundice."* The guard reads negation — it quotes that sentence back at you on screen. Point at it. |
 
+## Measured, not hoped for
+
+The live path was run end to end against a photograph of the printed page — rotated,
+dimmed and softened to approximate a phone shot at an angle under bad light:
+
+```
+letter rendered in 16.9s   (12.8s server-side, rest is upload + render)
+claimed ₹2,40,000 · approved ₹67,000 · disallowed ₹1,73,000
+five lines, all correct
+```
+
+**Budget ~13 seconds of silence** while it reads. That is inside §13's 0:35–1:10 beat, but
+it is longer than it feels on stage — do not fill it, and do not tap anything.
+
+The live read phrases two lines slightly better than the seeded fixture does:
+
+- *"Indoor case papers (day-by-day nursing and treatment record) not submitted"*
+- *"Summary does not establish: why inpatient admission of 4 nights was required"*
+
+If the wording on screen differs from this file, the live read won. That is fine.
+
 ## Known gaps — own them if asked
 
-- The live vision call is written but **untested against a real photograph** as of this
-  writing. The fixture path is what has been exercised end to end.
 - The Kannada and Hindi strings have not been checked by a native speaker.
 - Bucket C exposure figures (₹85,000 / ₹40,000) are seeded, not derived. Say so if
   pressed: the clause arithmetic is computed, the exposure is the payer's assertion.
