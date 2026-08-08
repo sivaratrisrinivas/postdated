@@ -81,7 +81,10 @@ export function AskSheet({ line, onResolve, onClose }: AskSheetProps) {
                   key={l.code}
                   type="button"
                   onClick={() => setLang(l.code)}
-                  className={`rounded-full px-3 py-1 font-mono text-[0.68rem] font-bold uppercase tracking-[0.08em] transition-colors ${
+                  lang={l.code}
+                  // The chip label is itself in the script it names, so it needs the face too.
+                  style={{ fontFamily: FONT_FOR[l.code] }}
+                  className={`rounded-full px-3 py-1 text-[0.72rem] font-bold tracking-[0.04em] transition-colors ${
                     lang === l.code
                       ? 'bg-[#1A1A1A] text-white'
                       : 'bg-black/5 text-black/55 hover:bg-black/10'
