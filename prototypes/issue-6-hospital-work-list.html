@@ -3,584 +3,396 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>POSTDATED prototype — hospital work list</title>
+  <title>POSTDATED prototype — minimal work list</title>
   <style>
     :root {
-      color-scheme: light;
-      --ink: #18211f;
-      --muted: #60706b;
-      --line: #d8e0dc;
-      --paper: #fffef9;
-      --wash: #f2f5f2;
-      --green: #176a4b;
-      --green-soft: #e6f2ec;
-      --amber: #885916;
-      --amber-soft: #fff3d7;
-      --red: #a43d35;
-      --red-soft: #fae9e5;
-      --blue: #285b7d;
-      --blue-soft: #e6f0f6;
-      --shadow: 0 12px 35px rgba(24, 33, 31, .09);
+      --ink: #15201c;
+      --muted: #63706a;
+      --line: #dce2de;
+      --paper: #fffefa;
+      --wash: #f4f6f4;
+      --green: #176648;
+      --green-soft: #e8f3ed;
+      --red: #a4453d;
+      --red-soft: #faece9;
+      --blue: #315f7b;
+      --blue-soft: #eaf1f5;
+      --amber: #805718;
+      --amber-soft: #fff4da;
+      --radius: 14px;
     }
-
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      background: #e9eeeb;
+      background: #eef1ef;
       color: var(--ink);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: Aptos, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
       line-height: 1.45;
     }
-    button { font: inherit; }
-    button:focus-visible { outline: 3px solid #6aa2c4; outline-offset: 2px; }
-    .shell { min-height: 100vh; }
-    .topbar {
-      background: #173f32;
-      color: white;
-      padding: 18px clamp(18px, 4vw, 52px);
+    button, summary { font: inherit; }
+    button:focus-visible, summary:focus-visible { outline: 3px solid #77a4be; outline-offset: 2px; }
+    button { cursor: pointer; }
+    .appbar {
+      min-height: 58px;
+      padding: 12px max(18px, calc((100vw - 980px) / 2));
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 24px;
+      gap: 18px;
+      background: #173e32;
+      color: white;
     }
-    .brand { font-weight: 800; letter-spacing: .14em; font-size: 13px; }
-    .prototype-mark { font-size: 12px; color: #bcd0c8; }
-    .prototype-mark strong { color: #fff; }
-    .intro {
-      background: var(--paper);
-      border-bottom: 1px solid var(--line);
-      padding: 28px clamp(18px, 4vw, 52px);
-    }
-    .intro-grid { max-width: 1240px; margin: 0 auto; display: grid; grid-template-columns: 1fr auto; gap: 28px; }
-    h1 { max-width: 820px; margin: 0; font-size: clamp(27px, 4vw, 44px); letter-spacing: -.035em; line-height: 1.08; }
-    .intro p { margin: 13px 0 0; max-width: 820px; color: var(--muted); font-size: 16px; }
-    .decision-chip { align-self: start; border: 1px solid #e2c37b; background: var(--amber-soft); color: #69430e; border-radius: 999px; padding: 7px 11px; font-size: 12px; font-weight: 750; white-space: nowrap; }
-    .layout { max-width: 1340px; margin: 0 auto; padding: 24px; display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 22px; }
-    .main, .side { min-width: 0; }
-    .side { display: flex; flex-direction: column; gap: 16px; }
-    .card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
-    .card-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
-    .card-body { padding: 20px; }
+    .brand { font-size: 13px; font-weight: 850; letter-spacing: .13em; }
+    .session { display: flex; align-items: center; gap: 9px; min-width: 0; font-size: 13px; color: #d4e2dc; }
+    .avatar { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #e8f3ed; color: var(--green); font-size: 11px; font-weight: 850; }
+    .prototype { color: #a9c0b7; font-size: 11px; }
+    main { width: min(920px, calc(100% - 28px)); margin: 26px auto 130px; }
+    .case-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
+    h1 { margin: 0; font-size: clamp(24px, 4vw, 34px); line-height: 1.12; letter-spacing: -.03em; }
     h2, h3, p { margin-top: 0; }
-    h2 { margin-bottom: 4px; font-size: 20px; letter-spacing: -.015em; }
-    h3 { margin-bottom: 5px; font-size: 15px; }
-    .sub { margin: 0; color: var(--muted); font-size: 13px; }
-    .status-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 14px 0 20px; }
-    .pill { border-radius: 999px; padding: 5px 9px; font-size: 12px; font-weight: 700; display: inline-flex; gap: 6px; align-items: center; }
-    .pill.neutral { background: #edf0ee; color: #52605c; }
-    .pill.good { background: var(--green-soft); color: var(--green); }
-    .pill.warn { background: var(--amber-soft); color: var(--amber); }
-    .pill.risk { background: var(--red-soft); color: var(--red); }
-    .pill.review { background: var(--blue-soft); color: var(--blue); }
-    .stepbar { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 20px; }
-    .step { height: 6px; border-radius: 999px; background: #dfe4e1; }
-    .step.on { background: var(--green); }
-    .empty { padding: 36px 20px; text-align: center; color: var(--muted); }
-    .empty strong { display: block; color: var(--ink); margin-bottom: 7px; font-size: 18px; }
-    .section-label { margin: 22px 0 10px; font-size: 12px; letter-spacing: .1em; text-transform: uppercase; font-weight: 800; color: var(--muted); }
-    .risk-grid { display: grid; gap: 12px; }
-    .risk-card { border: 1px solid var(--line); border-left-width: 5px; border-radius: 12px; background: white; overflow: hidden; }
-    .risk-card.unavoidable { border-left-color: #7d8985; }
-    .risk-card.preventable { border-left-color: var(--red); }
-    .risk-card.cleared { border-left-color: var(--green); background: #f8fcf9; }
-    .risk-card.review { border-left-color: var(--blue); background: #f8fbfd; }
-    .risk-summary { padding: 15px 16px; display: grid; grid-template-columns: 1fr auto; gap: 14px; align-items: start; }
-    .risk-title { font-weight: 760; margin-bottom: 5px; }
-    .money { font-variant-numeric: tabular-nums; font-weight: 800; white-space: nowrap; }
-    .risk-detail { padding: 0 16px 16px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .fact { background: var(--wash); border-radius: 9px; padding: 11px 12px; }
-    .fact b { display: block; margin-bottom: 4px; font-size: 11px; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
-    .fact span { font-size: 13px; }
-    .risk-actions { padding: 0 16px 16px; display: flex; flex-wrap: wrap; gap: 8px; }
-    .btn { border: 1px solid var(--line); background: white; color: var(--ink); border-radius: 9px; padding: 9px 12px; font-size: 13px; font-weight: 720; cursor: pointer; }
-    .btn:hover { border-color: #9ba9a4; }
-    .btn.primary { background: var(--green); color: white; border-color: var(--green); }
-    .btn.secondary { background: #203f55; color: white; border-color: #203f55; }
-    .btn.danger { color: var(--red); border-color: #d8ada8; }
-    .btn:disabled { cursor: not-allowed; opacity: .43; }
-    .documents { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-    .doc { border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: white; }
-    .doc strong { display: block; font-size: 13px; }
-    .doc span { color: var(--muted); font-size: 12px; }
-    .comparison { display: grid; grid-template-columns: 1fr 48px 1fr; gap: 10px; align-items: stretch; }
-    .evidence { border: 1px solid var(--line); border-radius: 10px; padding: 13px; background: white; }
-    .evidence.new { border-color: #8db4a3; background: #f4fbf7; }
-    .evidence b { display: block; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-    .arrow { display: grid; place-items: center; color: var(--green); font-size: 24px; }
-    .diff { margin-top: 10px; font-size: 13px; color: var(--green); font-weight: 700; }
-    .state-list { margin: 0; display: grid; gap: 10px; }
-    .state-list div { border-bottom: 1px solid var(--line); padding-bottom: 9px; }
-    .state-list div:last-child { border: 0; padding: 0; }
-    dt { color: var(--muted); font-size: 11px; font-weight: 750; text-transform: uppercase; letter-spacing: .06em; }
-    dd { margin: 2px 0 0; font-size: 13px; font-weight: 650; }
-    .action-grid { display: grid; grid-template-columns: 1fr; gap: 7px; }
-    .action-grid .btn { width: 100%; text-align: left; }
-    .notice { margin: 0 0 14px; padding: 11px 12px; border-radius: 9px; font-size: 13px; }
-    .notice.good { background: var(--green-soft); color: var(--green); }
-    .notice.bad { background: var(--red-soft); color: var(--red); }
-    .notice.info { background: var(--blue-soft); color: var(--blue); }
-    .walkthroughs { margin-top: 20px; }
-    .tabs { display: flex; gap: 6px; padding: 12px 12px 0; overflow-x: auto; }
-    .tab { border: 0; background: transparent; padding: 9px 11px; border-radius: 8px 8px 0 0; color: var(--muted); font-size: 13px; font-weight: 750; cursor: pointer; white-space: nowrap; }
-    .tab.active { background: var(--wash); color: var(--ink); }
-    .walk-body { background: var(--wash); border-radius: 0 0 15px 15px; padding: 16px; }
-    .walk-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
-    .walk-step { border: 1px solid var(--line); background: white; border-radius: 9px; padding: 9px 11px; font-size: 13px; font-weight: 700; cursor: pointer; }
-    .walk-step.current { border-color: var(--green); box-shadow: 0 0 0 2px rgba(23, 106, 75, .12); }
-    .walk-step.done { color: var(--green); background: var(--green-soft); }
-    .letter-link { margin-top: 16px; width: 100%; text-align: left; display: flex; justify-content: space-between; }
-    dialog { width: min(680px, calc(100% - 28px)); border: 0; border-radius: 16px; padding: 0; box-shadow: 0 30px 90px rgba(0,0,0,.3); }
-    dialog::backdrop { background: rgba(14, 24, 21, .58); }
-    .modal-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
-    .modal-body { padding: 20px; }
-    .lang-tabs { display: flex; gap: 6px; margin: 14px 0; }
-    .ask-copy { font-size: clamp(21px, 4vw, 30px); line-height: 1.45; font-weight: 720; padding: 18px; border-radius: 12px; background: var(--wash); }
-    .letter { background: #fff; border: 1px solid #b9b9b9; padding: 26px; font-family: Georgia, serif; position: relative; }
-    .stamp { border: 2px solid #b44c45; color: #b44c45; font-family: ui-sans-serif, system-ui; font-weight: 850; padding: 6px 9px; display: inline-block; transform: rotate(-2deg); margin-bottom: 20px; }
-    .letter h3 { font-size: 19px; }
-    .letter-total { color: #a43d35; font-size: 28px; font-weight: 800; }
-    .close { border: 0; background: transparent; font-size: 22px; cursor: pointer; }
-    .footer-note { max-width: 1240px; margin: 0 auto; padding: 0 24px 30px; color: var(--muted); font-size: 12px; }
-    @media (max-width: 900px) {
-      .layout { grid-template-columns: 1fr; padding: 14px; }
-      .side { order: -1; }
-      .intro-grid { grid-template-columns: 1fr; }
-      .decision-chip { justify-self: start; }
-      .risk-detail { grid-template-columns: 1fr; }
+    h2 { margin-bottom: 3px; font-size: 18px; letter-spacing: -.015em; }
+    h3 { margin-bottom: 3px; font-size: 15px; }
+    .sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
+    .meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
+    .chip { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; background: #e1e6e3; color: #4f5c56; padding: 5px 9px; font-size: 11px; font-weight: 750; }
+    .chip.good { background: var(--green-soft); color: var(--green); }
+    .chip.red { background: var(--red-soft); color: var(--red); }
+    .chip.blue { background: var(--blue-soft); color: var(--blue); }
+    .chip.amber { background: var(--amber-soft); color: var(--amber); }
+    .summary { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; padding: 14px 0; border-block: 1px solid var(--line); margin-bottom: 18px; }
+    .summary b { font-size: 14px; }
+    .summary span { color: var(--muted); font-size: 13px; }
+    .notice { padding: 11px 13px; border-radius: 10px; margin-bottom: 14px; font-size: 13px; }
+    .notice.good { color: var(--green); background: var(--green-soft); }
+    .notice.bad { color: var(--red); background: var(--red-soft); }
+    .notice.info { color: var(--blue); background: var(--blue-soft); }
+    .stack { display: grid; gap: 10px; }
+    .row {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 16px;
     }
-    @media (max-width: 560px) {
-      .topbar { align-items: flex-start; }
-      .documents, .comparison { grid-template-columns: 1fr; }
-      .arrow { transform: rotate(90deg); }
-      .risk-summary { grid-template-columns: 1fr; }
-      .stepbar { grid-template-columns: repeat(5, 1fr); }
+    .row-top { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start; }
+    .row-title { font-weight: 780; font-size: 15px; }
+    .row-copy { color: var(--muted); font-size: 13px; margin: 5px 0 0; max-width: 66ch; }
+    .amount { font-size: 15px; font-weight: 850; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
+    .btn { border: 1px solid var(--line); background: white; color: var(--ink); border-radius: 9px; padding: 8px 11px; font-size: 13px; font-weight: 730; }
+    .btn:hover { border-color: #9fa9a4; }
+    .btn.primary { color: white; background: var(--green); border-color: var(--green); }
+    .btn.quiet { background: transparent; border-color: transparent; color: var(--muted); padding-inline: 4px; }
+    .btn.danger { color: var(--red); border-color: #dcb6b1; }
+    details.why { margin-top: 13px; border-top: 1px solid var(--line); padding-top: 11px; }
+    details.why summary { color: var(--muted); font-size: 12px; font-weight: 750; cursor: pointer; list-style: none; }
+    details.why summary::-webkit-details-marker { display: none; }
+    details.why summary::after { content: " +"; }
+    details.why[open] summary::after { content: " −"; }
+    .proof { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+    .proof div { min-width: 0; }
+    .proof b { display: block; color: var(--muted); margin-bottom: 3px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+    .proof span { font-size: 12px; }
+    .deductions { margin-top: 14px; }
+    .deductions > summary { display: flex; justify-content: space-between; gap: 18px; padding: 13px 0; border-block: 1px solid var(--line); cursor: pointer; font-weight: 760; list-style: none; }
+    .deductions > summary::-webkit-details-marker { display: none; }
+    .deduction-list { padding: 12px 0 2px; display: grid; gap: 8px; }
+    .deduction { display: grid; grid-template-columns: 1fr auto; gap: 18px; color: var(--muted); font-size: 13px; }
+    .deduction b { color: var(--ink); }
+    .evidence-update { padding: 15px 16px; margin-bottom: 16px; border: 1px solid #9abaaa; border-radius: var(--radius); background: #f5fbf7; }
+    .evidence-update h2 { color: var(--green); }
+    .diffline { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin-top: 11px; font-size: 13px; }
+    .diffline > div { padding: 10px; border-radius: 9px; background: white; border: 1px solid var(--line); }
+    .diffline .new { border-color: #9abaaa; }
+    .letter-link { display: flex; justify-content: space-between; width: 100%; margin-top: 16px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 13px; }
+    .empty { text-align: center; padding: 70px 20px; color: var(--muted); }
+    .empty h2 { color: var(--ink); font-size: 23px; }
+
+    /* Variant B: one decision at a time. */
+    .focus-shell { width: min(670px, 100%); margin: 0 auto; }
+    .focus-count { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
+    .focus-card { background: var(--paper); border-radius: 18px; padding: clamp(22px, 5vw, 38px); box-shadow: 0 18px 45px rgba(21,32,28,.09); }
+    .focus-card .row-title { font-size: clamp(23px, 4vw, 32px); letter-spacing: -.03em; line-height: 1.15; }
+    .focus-card .amount { font-size: 20px; margin-top: 20px; }
+    .focus-card .proof { grid-template-columns: 1fr; border-top: 1px solid var(--line); padding-top: 14px; }
+    .queue { margin-top: 14px; border-top: 1px solid var(--line); }
+    .queue-item { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
+    .queue-item span { color: var(--muted); }
+
+    /* Variant C: evidence ledger. */
+    .ledger { border-block: 1px solid var(--line); }
+    .ledger-row { display: grid; grid-template-columns: 170px 1fr 150px; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); align-items: start; }
+    .ledger-row:last-child { border: 0; }
+    .ledger-source { color: var(--muted); font-size: 12px; }
+    .ledger-result { text-align: right; }
+    .ledger-result .amount { display: block; margin-bottom: 6px; }
+
+    .prototype-panel { margin-top: 26px; }
+    .prototype-panel > summary { color: var(--muted); font-size: 12px; cursor: pointer; }
+    .controls { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 12px; }
+    .state-line { width: 100%; color: var(--muted); font-size: 11px; margin-top: 4px; }
+    .switcher {
+      position: fixed;
+      z-index: 20;
+      bottom: 18px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: 38px minmax(150px, auto) 38px;
+      align-items: center;
+      padding: 5px;
+      border-radius: 999px;
+      background: #14231e;
+      color: white;
+      box-shadow: 0 12px 30px rgba(0,0,0,.2);
+    }
+    .switcher button { width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: white; font-size: 18px; }
+    .switcher button:hover { background: rgba(255,255,255,.1); }
+    .variant-name { padding: 0 12px; text-align: center; font-size: 12px; font-weight: 760; white-space: nowrap; }
+    dialog { width: min(640px, calc(100% - 28px)); border: 0; border-radius: 16px; padding: 0; box-shadow: 0 30px 80px rgba(0,0,0,.28); }
+    dialog::backdrop { background: rgba(12,22,18,.58); }
+    .dialog-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: start; gap: 20px; }
+    .dialog-body { padding: 20px; }
+    .close { border: 0; background: transparent; color: var(--muted); font-size: 22px; }
+    .languages { display: flex; gap: 6px; margin-bottom: 16px; }
+    .ask { padding: 20px; background: var(--wash); border-radius: 12px; font-size: clamp(21px, 4vw, 28px); font-weight: 700; line-height: 1.48; }
+    .letter { border: 1px solid #bbb; background: white; padding: 24px; font-family: Georgia, serif; }
+    .simulation { display: inline-block; border: 2px solid var(--red); color: var(--red); padding: 5px 8px; margin-bottom: 15px; font-family: ui-sans-serif, system-ui; font-size: 11px; font-weight: 850; }
+    @media (max-width: 700px) {
+      .prototype { display: none; }
+      .case-head { display: block; }
+      .case-head > .chip { margin-top: 14px; }
+      .proof, .ledger-row { grid-template-columns: 1fr; }
+      .ledger-result { text-align: left; }
+      .diffline { grid-template-columns: 1fr; }
+      .diffline > span { text-align: center; transform: rotate(90deg); }
+      .switcher { bottom: 12px; }
     }
   </style>
 </head>
 <body>
-  <div class="shell">
-    <header class="topbar">
-      <div class="brand">POSTDATED</div>
-      <div class="prototype-mark"><strong>PROTOTYPE</strong> · issue #6 · not production</div>
-    </header>
+  <header class="appbar">
+    <div class="brand">POSTDATED</div>
+    <div class="session"><span class="prototype">Prototype · issue #6</span><span class="avatar">AR</span><span>Ananya Rao</span></div>
+  </header>
+  <main id="app"></main>
 
-    <section class="intro">
-      <div class="intro-grid">
-        <div>
-          <h1>Can a busy hospital desk trust the work list and corrected-document comparison?</h1>
-          <p>This throwaway prototype tests the state model from opening a case to completion. The key question is whether evidence—not a button press or a fresh upload—controls when a warning clears.</p>
-        </div>
-        <div class="decision-chip">Wayfinder decision under map #1</div>
-      </div>
-    </section>
+  <nav class="switcher" aria-label="Prototype variants">
+    <button id="prev-variant" aria-label="Previous variant">←</button>
+    <div class="variant-name" id="variant-name"></div>
+    <button id="next-variant" aria-label="Next variant">→</button>
+  </nav>
 
-    <div class="layout">
-      <main class="main">
-        <section class="card" aria-labelledby="case-heading">
-          <div class="card-head">
-            <div>
-              <h2 id="case-heading">Saturday discharge · Ramachandra P.</h2>
-              <p class="sub">Krishna Multispeciality Hospital · Case PD-4471</p>
-            </div>
-            <span class="pill neutral" id="stage-pill">Not opened</span>
-          </div>
-          <div class="card-body" id="case-view"></div>
-        </section>
-
-        <section class="card walkthroughs" aria-labelledby="walk-heading">
-          <div class="card-head">
-            <div>
-              <h2 id="walk-heading">Guided walkthroughs</h2>
-              <p class="sub">Use these to test the happy path and the awkward cases.</p>
-            </div>
-          </div>
-          <div class="tabs" id="walk-tabs"></div>
-          <div class="walk-body" id="walk-body"></div>
-        </section>
-      </main>
-
-      <aside class="side">
-        <section class="card" aria-labelledby="state-heading">
-          <div class="card-head"><div><h2 id="state-heading">Current state</h2><p class="sub">Re-renders after every action.</p></div></div>
-          <div class="card-body"><div id="last-change"></div><dl class="state-list" id="state-view"></dl></div>
-        </section>
-
-        <section class="card" aria-labelledby="actions-heading">
-          <div class="card-head"><div><h2 id="actions-heading">Free play</h2><p class="sub">Try actions in the wrong order.</p></div></div>
-          <div class="card-body action-grid" id="actions"></div>
-        </section>
-      </aside>
-    </div>
-
-    <p class="footer-note">No patient documents leave this page. All state is in memory and disappears on refresh.</p>
-  </div>
-
-  <dialog id="ask-dialog" aria-labelledby="ask-title">
-    <div class="modal-head"><div><h2 id="ask-title">Ask sheet</h2><p class="sub">Hold this up to the ward or treating doctor.</p></div><button class="close" aria-label="Close ask sheet" data-close="ask-dialog">×</button></div>
-    <div class="modal-body" id="ask-body"></div>
+  <dialog id="ask-dialog" aria-labelledby="ask-heading">
+    <div class="dialog-head"><div><h2 id="ask-heading">Ask sheet</h2><p class="sub">Show this to the nursing station.</p></div><button class="close" data-close="ask-dialog" aria-label="Close ask sheet">×</button></div>
+    <div class="dialog-body" id="ask-body"></div>
   </dialog>
-
-  <dialog id="letter-dialog" aria-labelledby="letter-title">
-    <div class="modal-head"><div><h2 id="letter-title">Simulated future letter</h2><p class="sub">Secondary explanation view · not an insurer decision.</p></div><button class="close" aria-label="Close simulated letter" data-close="letter-dialog">×</button></div>
-    <div class="modal-body" id="letter-body"></div>
+  <dialog id="letter-dialog" aria-labelledby="letter-heading">
+    <div class="dialog-head"><div><h2 id="letter-heading">Simulated future letter</h2><p class="sub">Secondary explanation · not a claim decision.</p></div><button class="close" data-close="letter-dialog" aria-label="Close simulated letter">×</button></div>
+    <div class="dialog-body" id="letter-body"></div>
   </dialog>
 
   <script>
-    // Portable state module. Pure data in, pure data out; no DOM access.
-    const WorkListModel = (() => {
-      const initial = () => ({
-        employee: null,
-        caseOpened: false,
-        policy: null,
-        originalDocuments: { dischargeSummary: false, itemisedBill: false },
-        analysed: false,
-        evidenceVersion: 0,
-        correctedKind: null,
-        comparison: null,
-        humanReview: 'not_sent',
-        askSheet: null,
-        askLanguage: 'en',
-        complete: false,
-        lastChange: 'Ready. Open the case to begin.',
-        lastResult: 'info'
-      });
+    // Three structurally different minimal variants on one route: ?variant=A|B|C.
+    const variants = {
+      A: 'A — Action queue',
+      B: 'B — One decision',
+      C: 'C — Evidence ledger'
+    };
+    const variantKeys = Object.keys(variants);
+    let variant = new URLSearchParams(location.search).get('variant')?.toUpperCase();
+    if (!variantKeys.includes(variant)) variant = 'A';
 
-      const risks = [
-        {
-          id: 'room', kind: 'unavoidable', title: 'Room category is above the policy schedule', amount: 33000,
-          evidence: 'Bill: Deluxe Single Room, ₹8,000/day for 4 nights.',
-          rule: 'Verified Niva Bupa ReAssure 2.0 rule · §4.21 Room Type Modification · eligible Single Private Room at ₹5,000/day.',
-          calculation: '₹12,000 room excess + ₹21,000 proportionate deduction = ₹33,000.',
-          reason: 'The room was already used. This deduction cannot be prevented at discharge.',
-          required: 'No action can change this now.'
-        },
-        {
-          id: 'consumables', kind: 'unavoidable', title: 'Non-payable consumables', amount: 15000,
-          evidence: 'Bill: gloves, PPE kit and syringes · ₹15,000.',
-          rule: 'Verified Niva Bupa ReAssure 2.0 rule · Annexure I non-payable items.',
-          calculation: '₹15,000 matched bill lines = ₹15,000 unavoidable deduction.',
-          reason: 'These billed items are excluded under the verified policy configuration.',
-          required: 'No action can change this now.'
-        },
-        {
-          id: 'indoor-papers', kind: 'preventable', title: 'Indoor case papers are missing', amount: 84000,
-          evidence: 'Original upload contains a discharge summary and bill. No day-by-day ward record is present.',
-          rule: 'Verified Niva Bupa claim-document rule · complete medical records must support the claimed hospital charges.',
-          calculation: '₹12,000 nursing + ₹30,000 doctor fees + ₹14,000 theatre + ₹28,000 diagnostics = ₹84,000 at risk.',
-          reason: 'Without the ward record, the payer may treat these charges as unsupported.',
-          required: 'Required document: signed indoor case papers from the nursing station.',
-          ask: {
-            en: 'Please provide the signed indoor case papers — the day-by-day ward record — for this admission.',
-            kn: 'ದಯವಿಟ್ಟು ಈ ದಾಖಲಾತಿಗೆ ಸಹಿ ಮಾಡಿದ ದಿನನಿತ್ಯದ ವಾರ್ಡ್ ದಾಖಲೆಗಳನ್ನು (Indoor Case Papers) ನೀಡಿ.',
-            hi: 'कृपया इस भर्ती के हस्ताक्षर किए हुए रोज़ के वार्ड रिकॉर्ड (Indoor Case Papers) दें।'
-          }
-        },
-        {
-          id: 'necessity', kind: 'review', title: 'Reason for inpatient admission is unclear', amount: null,
-          evidence: 'Original summary says: “Post-operative period uneventful.” It does not state why inpatient admission was required.',
-          rule: 'Verified Niva Bupa ReAssure 2.0 rule · §4.2.1 hospitalization expenses must meet the policy conditions for inpatient treatment.',
-          calculation: 'No reliable rupee result. The clinical judgement is not deterministic.',
-          reason: 'POSTDATED must not invent the clinical reason or turn uncertainty into a green result.',
-          required: 'Doctor question: Does the record state why inpatient admission was required? Only the treating doctor may answer and sign.',
-          ask: {
-            en: 'Doctor: does the record state why inpatient admission was required? If not, please answer in the medical record and sign it.',
-            kn: 'ವೈದ್ಯರೇ: ರೋಗಿಯನ್ನು ಒಳರೋಗಿಯಾಗಿ ದಾಖಲಿಸಬೇಕಾದ ಕಾರಣ ದಾಖಲೆಯಲ್ಲಿ ಇದೆಯೇ? ಇಲ್ಲದಿದ್ದರೆ, ದಯವಿಟ್ಟು ದಾಖಲೆಯಲ್ಲಿ ಉತ್ತರಿಸಿ ಸಹಿ ಮಾಡಿ.',
-            hi: 'डॉक्टर: क्या रिकॉर्ड में मरीज़ को भर्ती करना क्यों ज़रूरी था, यह लिखा है? यदि नहीं, तो कृपया मेडिकल रिकॉर्ड में उत्तर देकर हस्ताक्षर करें।'
-          }
-        }
-      ];
+    const initial = () => ({
+      step: 4,
+      corrected: null,
+      reviewSent: false,
+      complete: false,
+      askLanguage: 'en',
+      lastChange: 'Work list created from the original discharge summary and bill.',
+      tone: 'info'
+    });
+    let state = initial();
 
-      function facts(state) {
-        const comparisonFixesPapers = state.comparison?.indoorPapers === 'added';
-        return risks.map(risk => {
-          if (risk.id === 'indoor-papers') {
-            return { ...risk, status: comparisonFixesPapers ? 'cleared' : 'open' };
-          }
-          if (risk.id === 'necessity') {
-            return { ...risk, status: state.humanReview === 'sent' ? 'sent_for_review' : 'needs_review' };
-          }
-          return { ...risk, status: 'unavoidable' };
-        });
-      }
-
-      function derived(state) {
-        const currentRisks = facts(state);
-        const openPreventable = currentRisks.filter(r => r.kind === 'preventable' && r.status !== 'cleared').length;
-        const reviewOutstanding = currentRisks.some(r => r.kind === 'review' && r.status === 'needs_review');
-        const uploadsReady = state.originalDocuments.dischargeSummary && state.originalDocuments.itemisedBill;
-        return {
-          risks: currentRisks,
-          uploadsReady,
-          canAnalyse: state.caseOpened && !!state.policy && uploadsReady,
-          canComplete: state.analysed && openPreventable === 0 && !reviewOutstanding && !state.complete,
-          openPreventable,
-          reviewOutstanding,
-          unavoidableTotal: currentRisks.filter(r => r.kind === 'unavoidable').reduce((sum, r) => sum + r.amount, 0)
-        };
-      }
-
-      function accept(state, patch, message) {
-        return { ...state, ...patch, lastChange: message, lastResult: 'good' };
-      }
-      function reject(state, message) {
-        return { ...state, lastChange: message, lastResult: 'bad' };
-      }
-
-      function reducer(state, action) {
-        const d = derived(state);
-        switch (action.type) {
-          case 'RESET': return initial();
-          case 'OPEN_CASE':
-            if (state.caseOpened) return reject(state, 'The case is already open.');
-            return accept(state, { employee: 'Ananya Rao · Insurance Desk', caseOpened: true }, 'Ananya Rao opened case PD-4471.');
-          case 'SELECT_POLICY':
-            if (!state.caseOpened) return reject(state, 'Open the case before choosing a policy.');
-            return accept(state, { policy: 'Niva Bupa ReAssure 2.0 · verified 12 Aug 2026' }, 'Selected the human-verified Niva Bupa policy configuration.');
-          case 'UPLOAD_DISCHARGE':
-            if (!state.caseOpened) return reject(state, 'Open the case before uploading documents.');
-            return accept(state, { originalDocuments: { ...state.originalDocuments, dischargeSummary: true } }, 'Uploaded discharge-summary-original.pdf. No risk has cleared.');
-          case 'UPLOAD_BILL':
-            if (!state.caseOpened) return reject(state, 'Open the case before uploading documents.');
-            return accept(state, { originalDocuments: { ...state.originalDocuments, itemisedBill: true } }, 'Uploaded itemised-final-bill.pdf. No risk has cleared.');
-          case 'ANALYSE':
-            if (!d.canAnalyse) return reject(state, 'Choose the verified policy and upload both original documents first.');
-            return accept(state, { analysed: true, evidenceVersion: 1 }, 'Work list created from evidence version 1.');
-          case 'OPEN_ASK':
-            if (!state.analysed) return reject(state, 'Create the work list before opening an ask sheet.');
-            return accept(state, { askSheet: action.riskId, askLanguage: action.language || 'en' }, 'Opened the ask sheet. This does not change risk status.');
-          case 'SET_LANGUAGE':
-            return accept(state, { askLanguage: action.language }, 'Changed the ask-sheet language. Risk status is unchanged.');
-          case 'UPLOAD_CORRECTED': {
-            if (!state.analysed) return reject(state, 'Create the work list before uploading corrected evidence.');
-            const changed = action.kind === 'fixed';
-            const comparison = changed
-              ? { indoorPapers: 'added', doctorAnswer: 'added_needs_review', summary: 'New evidence found: indoor case papers added; signed doctor answer added.' }
-              : { indoorPapers: 'still_missing', doctorAnswer: 'still_missing', summary: 'No relevant evidence changed.' };
-            return accept(state, { correctedKind: action.kind, comparison, evidenceVersion: state.evidenceVersion + 1 }, changed
-              ? 'Compared evidence versions. The document warning cleared because the required pages are now present. Clinical evidence still needs human review.'
-              : 'Compared evidence versions. The new upload did not fix either evidence gap, so nothing cleared.');
-          }
-          case 'SEND_REVIEW':
-            if (!state.comparison || state.comparison.doctorAnswer !== 'added_needs_review') return reject(state, 'There is no new doctor-signed evidence to send for human review.');
-            return accept(state, { humanReview: 'sent' }, 'Sent the signed answer to Priya Menon for human review. It is not marked fixed.');
-          case 'COMPLETE':
-            if (!d.canComplete) return reject(state, 'Cannot complete: clear preventable document gaps with evidence and route uncertainty to human review.');
-            return accept(state, { complete: true }, 'Ananya completed the desk case. The human-review item remains labelled and routed.');
-          default: return reject(state, 'Unknown action.');
-        }
-      }
-
-      return { initial, reducer, derived };
-    })();
-
-    let state = WorkListModel.initial();
-    let activeWalk = 'complete';
-    let walkIndex = 0;
-
-    const walks = {
-      complete: {
-        name: 'Complete the case',
-        description: 'Happy path: build the work list, collect corrected evidence, compare it, route uncertainty, and complete.',
-        steps: [
-          ['Open as Ananya', { type: 'OPEN_CASE' }],
-          ['Choose verified Niva Bupa policy', { type: 'SELECT_POLICY' }],
-          ['Upload discharge summary', { type: 'UPLOAD_DISCHARGE' }],
-          ['Upload itemised final bill', { type: 'UPLOAD_BILL' }],
-          ['Create work list', { type: 'ANALYSE' }],
-          ['Open Kannada ask sheet', { type: 'OPEN_ASK', riskId: 'indoor-papers', language: 'kn' }],
-          ['Upload corrected case packet', { type: 'UPLOAD_CORRECTED', kind: 'fixed' }],
-          ['Send uncertainty to Priya', { type: 'SEND_REVIEW' }],
-          ['Complete desk case', { type: 'COMPLETE' }]
-        ]
-      },
-      unchanged: {
-        name: 'Unchanged re-upload',
-        description: 'Edge case: a different filename is uploaded, but the evidence is unchanged. Watch the warning remain open.',
-        setup: [
-          { type: 'OPEN_CASE' }, { type: 'SELECT_POLICY' }, { type: 'UPLOAD_DISCHARGE' },
-          { type: 'UPLOAD_BILL' }, { type: 'ANALYSE' }
-        ],
-        steps: [
-          ['Upload renamed but unchanged file', { type: 'UPLOAD_CORRECTED', kind: 'unchanged' }],
-          ['Try to complete', { type: 'COMPLETE' }]
-        ]
-      },
-      illegal: {
-        name: 'Wrong order',
-        description: 'Guardrail: try to analyse or complete before the required evidence exists.',
-        steps: [
-          ['Try to create work list', { type: 'ANALYSE' }],
-          ['Try to complete case', { type: 'COMPLETE' }],
-          ['Open case', { type: 'OPEN_CASE' }],
-          ['Try to create work list again', { type: 'ANALYSE' }]
-        ]
+    const risk = {
+      title: 'Collect the indoor case papers',
+      amount: 84000,
+      why: 'The day-by-day ward record is missing, so the payer may treat four charge groups as unsupported.',
+      evidence: 'Original upload: discharge summary and final bill only. No ward record found.',
+      rule: 'Verified Niva Bupa claim-document rule: medical records must support claimed hospital charges.',
+      calculation: '₹12,000 nursing + ₹30,000 doctor fees + ₹14,000 theatre + ₹28,000 diagnostics = ₹84,000.',
+      asks: {
+        en: 'Please provide the signed indoor case papers — the day-by-day ward record — for this admission.',
+        kn: 'ದಯವಿಟ್ಟು ಈ ದಾಖಲಾತಿಗೆ ಸಹಿ ಮಾಡಿದ ದಿನನಿತ್ಯದ ವಾರ್ಡ್ ದಾಖಲೆಗಳನ್ನು (Indoor Case Papers) ನೀಡಿ.',
+        hi: 'कृपया इस भर्ती के हस्ताक्षर किए हुए रोज़ के वार्ड रिकॉर्ड (Indoor Case Papers) दें।'
       }
     };
+    const review = {
+      title: 'Reason for inpatient admission is unclear',
+      why: 'Only the treating doctor can answer. POSTDATED does not write or suggest the clinical reason.',
+      evidence: 'Original summary: “Post-operative period uneventful.” No reason for inpatient admission is stated.',
+      rule: 'Verified Niva Bupa ReAssure 2.0 §4.2.1 hospitalization conditions.',
+      calculation: 'No reliable rupee result. Needs human review.'
+    };
 
-    function dispatch(action, fromWalk = false) {
-      state = WorkListModel.reducer(state, action);
-      if (fromWalk) walkIndex += 1;
-      render();
-      if (action.type === 'OPEN_ASK' && state.askSheet) document.getElementById('ask-dialog').showModal();
-    }
+    const derived = () => ({
+      analysed: state.step >= 4,
+      asked: state.step >= 5,
+      riskCleared: state.corrected === 'fixed',
+      reviewSent: state.reviewSent,
+      open: state.corrected === 'fixed' ? 0 : 1,
+      canComplete: state.corrected === 'fixed' && state.reviewSent && !state.complete,
+      version: state.corrected ? 2 : 1
+    });
 
-    function startWalk(id) {
-      activeWalk = id;
-      walkIndex = 0;
-      state = WorkListModel.initial();
-      for (const action of walks[id].setup || []) state = WorkListModel.reducer(state, action);
-      state = { ...state, lastChange: `Walkthrough reset: ${walks[id].name}.`, lastResult: 'info' };
-      render();
-    }
-
-    function stage(state) {
-      if (state.complete) return ['Complete', 'good'];
-      if (state.comparison) return ['Evidence compared', 'review'];
-      if (state.analysed) return ['Work list ready', 'risk'];
-      if (state.caseOpened) return ['Collecting documents', 'warn'];
-      return ['Not opened', 'neutral'];
-    }
-
-    function esc(value) {
-      return String(value).replace(/[&<>'"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[c]));
-    }
-    const money = n => n == null ? 'Not calculated' : `₹${n.toLocaleString('en-IN')}`;
-
-    function render() {
-      const d = WorkListModel.derived(state);
-      const [stageText, stageTone] = stage(state);
-      const pill = document.getElementById('stage-pill');
-      pill.className = `pill ${stageTone}`;
-      pill.textContent = stageText;
-      renderCase(d);
-      renderState(d);
-      renderActions();
-      renderWalks();
-      renderAsk();
-      renderLetter(d);
-    }
-
-    function renderCase(d) {
-      const root = document.getElementById('case-view');
-      const completedSteps = state.complete ? 5 : state.comparison ? 4 : state.analysed ? 3 : d.uploadsReady ? 2 : state.caseOpened ? 1 : 0;
-      const steps = `<div class="stepbar" aria-label="Case progress">${[1,2,3,4,5].map(n => `<span class="step ${n <= completedSteps ? 'on' : ''}"></span>`).join('')}</div>`;
-      if (!state.caseOpened) {
-        root.innerHTML = `${steps}<div class="empty"><strong>No case open</strong>Start as the named hospital insurance-desk employee.</div>`;
-        return;
+    function dispatch(action) {
+      const d = derived();
+      const good = message => Object.assign(state, { lastChange: message, tone: 'good' });
+      const bad = message => Object.assign(state, { lastChange: message, tone: 'bad' });
+      switch (action) {
+        case 'reset': state = initial(); break;
+        case 'start': state = { ...initial(), step: -1, lastChange: 'Ready to open the case.', tone: 'info' }; break;
+        case 'next': advance(); return;
+        case 'ask':
+          if (!d.analysed) return bad('Create the work list first.'), render();
+          state.step = Math.max(state.step, 5); good('Ask sheet opened. No warning status changed.'); render(); openAsk(); return;
+        case 'fixed':
+          if (!d.analysed) return bad('Create the work list first.'), render();
+          state.step = Math.max(state.step, 6); state.corrected = 'fixed';
+          good('Evidence v2 adds the signed indoor case papers. The document warning cleared.'); break;
+        case 'unchanged':
+          if (!d.analysed) return bad('Create the work list first.'), render();
+          state.step = Math.max(state.step, 6); state.corrected = 'unchanged';
+          good('Evidence v2 contains no relevant change. The warning remains open.'); break;
+        case 'review':
+          if (state.corrected !== 'fixed') return bad('Upload the doctor-signed evidence before routing it for review.'), render();
+          state.step = Math.max(state.step, 7); state.reviewSent = true;
+          good('Sent to Priya Menon. It still says needs human review; it is not marked fixed.'); break;
+        case 'complete':
+          if (!d.canComplete) return bad('Cannot complete: collect the missing document and route uncertainty for human review.'), render();
+          state.step = 8; state.complete = true; good('Desk case complete. Human review remains visible and routed.'); break;
       }
-      const docs = `
-        <div class="documents">
-          <div class="doc"><strong>${state.originalDocuments.dischargeSummary ? '✓' : '○'} Discharge summary</strong><span>${state.originalDocuments.dischargeSummary ? 'discharge-summary-original.pdf' : 'Not uploaded'}</span></div>
-          <div class="doc"><strong>${state.originalDocuments.itemisedBill ? '✓' : '○'} Itemised final bill</strong><span>${state.originalDocuments.itemisedBill ? 'itemised-final-bill.pdf' : 'Not uploaded'}</span></div>
-        </div>`;
-      if (!state.analysed) {
-        root.innerHTML = `${steps}<div class="status-line"><span class="pill good">${esc(state.employee)}</span><span class="pill ${state.policy ? 'good' : 'warn'}">${state.policy ? esc(state.policy) : 'Policy not chosen'}</span></div>${docs}`;
-        return;
+      render();
+    }
+
+    function advance() {
+      const sequence = [
+        'Ananya opened case PD-4471.',
+        'Selected the verified Niva Bupa policy.',
+        'Uploaded the discharge summary.',
+        'Uploaded the itemised final bill.',
+        'Work list created from evidence v1.'
+      ];
+      if (state.step < 4) {
+        state.step += 1;
+        state.lastChange = sequence[state.step]; state.tone = 'good'; render(); return;
       }
-      const comparison = state.comparison ? comparisonView() : '';
-      root.innerHTML = `${steps}<div class="status-line"><span class="pill good">${esc(state.employee)}</span><span class="pill good">Verified policy</span><span class="pill neutral">Evidence v${state.evidenceVersion}</span>${state.complete ? '<span class="pill good">Desk case complete</span>' : ''}</div>${docs}${comparison}<p class="section-label">Unavoidable policy deductions · ${money(d.unavoidableTotal)}</p><div class="risk-grid">${d.risks.filter(r => r.kind === 'unavoidable').map(riskCard).join('')}</div><p class="section-label">Preventable work and human review</p><div class="risk-grid">${d.risks.filter(r => r.kind !== 'unavoidable').map(riskCard).join('')}</div><button class="btn letter-link" data-letter><span>View simulated future letter</span><span>Secondary view →</span></button>`;
-      root.querySelectorAll('[data-ask]').forEach(btn => btn.addEventListener('click', () => dispatch({ type: 'OPEN_ASK', riskId: btn.dataset.ask, language: 'en' })));
-      root.querySelector('[data-letter]').addEventListener('click', () => document.getElementById('letter-dialog').showModal());
+      if (state.step === 4) return dispatch('ask');
+      if (!state.corrected) return dispatch('fixed');
+      if (!state.reviewSent) return dispatch('review');
+      return dispatch('complete');
     }
 
-    function riskCard(risk) {
-      const tone = risk.status === 'cleared' ? 'cleared' : risk.kind === 'review' ? 'review' : risk.kind;
-      const status = risk.status === 'cleared' ? '<span class="pill good">Cleared by new evidence</span>'
-        : risk.status === 'needs_review' ? '<span class="pill review">Needs human review</span>'
-        : risk.status === 'sent_for_review' ? '<span class="pill review">Needs human review · sent to Priya</span>'
-        : risk.kind === 'unavoidable' ? '<span class="pill neutral">Unavoidable</span>'
-        : '<span class="pill risk">Action needed</span>';
-      return `<article class="risk-card ${tone}">
-        <div class="risk-summary"><div><div class="risk-title">${esc(risk.title)}</div>${status}</div><div class="money">${money(risk.amount)}</div></div>
-        <div class="risk-detail">
-          <div class="fact"><b>Document evidence</b><span>${esc(risk.evidence)}</span></div>
-          <div class="fact"><b>Verified policy rule</b><span>${esc(risk.rule)}</span></div>
-          <div class="fact"><b>Deterministic calculation</b><span>${esc(risk.calculation)}</span></div>
-          <div class="fact"><b>Why this warning appears</b><span>${esc(risk.reason)}</span></div>
-          <div class="fact" style="grid-column:1/-1"><b>Required next step</b><span>${esc(risk.required)}</span></div>
-        </div>
-        ${risk.ask ? `<div class="risk-actions"><button class="btn" data-ask="${risk.id}">Open ask sheet</button></div>` : ''}
-      </article>`;
+    function header(d) {
+      if (!d.analysed) return `<section class="empty"><h2>${stageTitle()}</h2><p>${state.lastChange}</p><button class="btn primary" data-action="next">${nextLabel()}</button></section>`;
+      return `<header class="case-head"><div><h1>Ramachandra P. · discharge today</h1><p class="sub">Case PD-4471 · Krishna Multispeciality Hospital</p><div class="meta"><span class="chip good">Niva Bupa · verified</span><span class="chip">Discharge summary</span><span class="chip">Itemised bill</span><span class="chip">Evidence v${d.version}</span></div></div>${state.complete ? '<span class="chip good">Desk case complete</span>' : '<span class="chip amber">40 minutes left</span>'}</header>`;
     }
 
-    function comparisonView() {
-      const fixed = state.comparison.indoorPapers === 'added';
-      return `<div><p class="section-label">Old and new evidence comparison</p>
-        <div class="comparison">
-          <div class="evidence"><b>Evidence v1 · original</b>Discharge summary and itemised bill only. Indoor case papers absent. Admission reason not stated.</div>
-          <div class="arrow">→</div>
-          <div class="evidence new"><b>Evidence v${state.evidenceVersion} · corrected upload</b>${fixed ? 'Signed indoor case papers present. A new doctor-signed answer is present and awaits human review.' : 'Same discharge summary and bill. Required evidence is still absent.'}</div>
-        </div>
-        <div class="diff">${fixed ? '✓ Document evidence added. One warning cleared. Clinical judgement did not auto-clear.' : 'No relevant evidence changed. No warning cleared.'}</div>
-      </div>`;
+    function commonSummary(d) {
+      return `${state.lastChange ? `<div class="notice ${state.tone}" aria-live="polite">${esc(state.lastChange)}</div>` : ''}<div class="summary"><b>${d.open} document task${d.open === 1 ? '' : 's'}</b><span>1 needs human review</span><span>₹48,000 unavoidable</span></div>${state.corrected ? evidenceUpdate(d) : ''}`;
     }
 
-    function renderState(d) {
-      const notice = document.getElementById('last-change');
-      notice.className = `notice ${state.lastResult}`;
-      notice.textContent = state.lastChange;
-      const items = [
-        ['Employee', state.employee || 'None'],
-        ['Policy', state.policy || 'None'],
-        ['Original uploads', `${Number(state.originalDocuments.dischargeSummary) + Number(state.originalDocuments.itemisedBill)} of 2`],
-        ['Evidence version', state.evidenceVersion || 'None'],
-        ['Preventable warnings open', d.openPreventable],
-        ['Human review', state.humanReview === 'sent' ? 'Needs human review · routed to Priya' : d.reviewOutstanding ? 'Needs human review · not routed' : 'Not available yet'],
-        ['Can complete?', d.canComplete ? 'Yes' : state.complete ? 'Already complete' : 'No'],
-        ['Case status', state.complete ? 'Complete' : 'In progress']
-      ];
-      document.getElementById('state-view').innerHTML = items.map(([k,v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('');
+    function variantA(d) {
+      return `${header(d)}${d.analysed ? `${commonSummary(d)}<section class="stack" aria-label="Work list">${documentRow(d)}${reviewRow(d)}</section>${deductions()}${letterLink()}${reviewControls(d)}` : ''}`;
     }
 
-    function renderActions() {
-      const actions = [
-        ['Open case as Ananya', { type: 'OPEN_CASE' }],
-        ['Choose verified Niva Bupa policy', { type: 'SELECT_POLICY' }],
-        ['Upload discharge summary', { type: 'UPLOAD_DISCHARGE' }],
-        ['Upload itemised final bill', { type: 'UPLOAD_BILL' }],
-        ['Create work list', { type: 'ANALYSE' }],
-        ['Upload corrected evidence', { type: 'UPLOAD_CORRECTED', kind: 'fixed' }],
-        ['Upload unchanged evidence', { type: 'UPLOAD_CORRECTED', kind: 'unchanged' }],
-        ['Send signed answer for human review', { type: 'SEND_REVIEW' }],
-        ['Complete case', { type: 'COMPLETE' }],
-        ['Reset prototype', { type: 'RESET' }]
-      ];
-      const root = document.getElementById('actions');
-      root.innerHTML = actions.map(([label, action], i) => `<button class="btn ${i === 8 ? 'primary' : i === 9 ? 'danger' : ''}" data-action="${i}">${esc(label)}</button>`).join('');
-      root.querySelectorAll('[data-action]').forEach(btn => btn.addEventListener('click', () => dispatch(actions[Number(btn.dataset.action)][1])));
+    function variantB(d) {
+      if (!d.analysed) return header(d);
+      const focus = d.riskCleared ? reviewFocus(d) : documentFocus(d);
+      return `${header(d)}<div class="focus-shell">${state.lastChange ? `<div class="notice ${state.tone}" aria-live="polite">${esc(state.lastChange)}</div>` : ''}<p class="focus-count">${d.riskCleared ? 'Next decision' : 'First of 2 decisions'}</p>${focus}<div class="queue"><div class="queue-item"><div><b>Policy deductions</b><br><span>No action can change these now</span></div><b>₹48,000</b></div>${d.riskCleared ? '<div class="queue-item"><div><b>Indoor case papers</b><br><span>Cleared by evidence v2</span></div><span class="chip good">Cleared</span></div>' : '<div class="queue-item"><div><b>Reason for admission</b><br><span>Needs human review</span></div><span class="chip blue">Review</span></div>'}</div>${letterLink()}${reviewControls(d)}</div>`;
     }
 
-    function renderWalks() {
-      const tabs = document.getElementById('walk-tabs');
-      tabs.innerHTML = Object.entries(walks).map(([id,w]) => `<button class="tab ${id === activeWalk ? 'active' : ''}" data-tab="${id}">${esc(w.name)}</button>`).join('');
-      tabs.querySelectorAll('[data-tab]').forEach(btn => btn.addEventListener('click', () => startWalk(btn.dataset.tab)));
-      const walk = walks[activeWalk];
-      const root = document.getElementById('walk-body');
-      root.innerHTML = `<h3>${esc(walk.name)}</h3><p class="sub">${esc(walk.description)}</p><div class="walk-actions">${walk.steps.map(([label], i) => `<button class="walk-step ${i < walkIndex ? 'done' : i === walkIndex ? 'current' : ''}" data-step="${i}">${i < walkIndex ? '✓ ' : `${i+1}. `}${esc(label)}</button>`).join('')}</div><button class="btn" style="margin-top:12px" data-restart>Restart this walkthrough</button>`;
-      root.querySelectorAll('[data-step]').forEach(btn => btn.addEventListener('click', () => {
-        const i = Number(btn.dataset.step);
-        if (i !== walkIndex) return;
-        dispatch(walk.steps[i][1], true);
-      }));
-      root.querySelector('[data-restart]').addEventListener('click', () => startWalk(activeWalk));
+    function variantC(d) {
+      if (!d.analysed) return header(d);
+      return `${header(d)}${commonSummary(d)}<section class="ledger" aria-label="Evidence ledger">
+        <article class="ledger-row"><div class="ledger-source"><b>Missing document</b><br>Discharge packet</div><div><h3>${risk.title}</h3><p class="sub">${risk.why}</p>${why(risk)}<div class="row-actions"><button class="btn" data-action="ask">Open ask sheet</button></div></div><div class="ledger-result"><span class="amount">₹84,000</span>${d.riskCleared ? '<span class="chip good">Cleared by v2</span>' : '<span class="chip red">Action needed</span>'}</div></article>
+        <article class="ledger-row"><div class="ledger-source"><b>Clinical evidence</b><br>Discharge summary</div><div><h3>${review.title}</h3><p class="sub">${review.why}</p>${why(review)}</div><div class="ledger-result"><span class="amount">Not calculated</span><span class="chip blue">${d.reviewSent ? 'Sent to Priya' : 'Needs review'}</span></div></article>
+        <article class="ledger-row"><div class="ledger-source"><b>Policy terms</b><br>Final bill</div><div><h3>Room and consumables</h3><p class="sub">Already incurred. No discharge-desk action can change them.</p></div><div class="ledger-result"><span class="amount">₹48,000</span><span class="chip">Unavoidable</span></div></article>
+      </section>${letterLink()}${reviewControls(d)}`;
     }
 
+    function documentRow(d) {
+      return `<article class="row"><div class="row-top"><div><div class="row-title">${risk.title}</div><p class="row-copy">${risk.why}</p></div><div><div class="amount">₹84,000</div><span class="chip ${d.riskCleared ? 'good' : 'red'}">${d.riskCleared ? 'Cleared by v2' : 'Action needed'}</span></div></div><div class="row-actions"><button class="btn primary" data-action="ask">Open ask sheet</button></div>${why(risk)}</article>`;
+    }
+    function reviewRow(d) {
+      return `<article class="row"><div class="row-top"><div><div class="row-title">${review.title}</div><p class="row-copy">${review.why}</p></div><div><div class="amount">Not calculated</div><span class="chip blue">${d.reviewSent ? 'Sent to Priya' : 'Needs human review'}</span></div></div>${why(review)}</article>`;
+    }
+    function documentFocus(d) {
+      return `<article class="focus-card"><span class="chip red">Action needed</span><div class="row-title" style="margin-top:14px">${risk.title}</div><p class="row-copy">${risk.why}</p><div class="amount">₹84,000 at risk</div><div class="row-actions"><button class="btn primary" data-action="ask">Open ask sheet</button></div>${why(risk)}</article>`;
+    }
+    function reviewFocus(d) {
+      return `<article class="focus-card"><span class="chip blue">${d.reviewSent ? 'Sent to Priya · needs review' : 'Needs human review'}</span><div class="row-title" style="margin-top:14px">${review.title}</div><p class="row-copy">${review.why}</p><div class="amount">No rupee result</div>${why(review)}${!d.reviewSent ? '<div class="row-actions"><button class="btn primary" data-action="review">Send to Priya</button></div>' : d.canComplete ? '<div class="row-actions"><button class="btn primary" data-action="complete">Complete desk case</button></div>' : ''}</article>`;
+    }
+    function why(item) {
+      return `<details class="why"><summary>Why this appears</summary><div class="proof"><div><b>Evidence</b><span>${esc(item.evidence)}</span></div><div><b>Verified rule</b><span>${esc(item.rule)}</span></div><div><b>Calculation</b><span>${esc(item.calculation)}</span></div></div></details>`;
+    }
+    function deductions() {
+      return `<details class="deductions"><summary><span>Unavoidable policy deductions</span><span>₹48,000</span></summary><div class="deduction-list"><div class="deduction"><span><b>Room category</b> · room excess and proportionate deduction</span><b>₹33,000</b></div><div class="deduction"><span><b>Non-payable consumables</b> · gloves, PPE and syringes</span><b>₹15,000</b></div></div></details>`;
+    }
+    function evidenceUpdate(d) {
+      const fixed = state.corrected === 'fixed';
+      return `<section class="evidence-update"><h2>${fixed ? 'New evidence fixed one warning' : 'No evidence changed'}</h2><p class="sub">${fixed ? 'The signed indoor case papers are present. The doctor-signed answer still needs human review.' : 'The filename changed, but the required pages are still missing. Nothing cleared.'}</p><div class="diffline"><div>v1 · indoor papers absent</div><span>→</span><div class="new">v2 · ${fixed ? 'signed pages present' : 'still absent'}</div></div></section>`;
+    }
+    function letterLink() {
+      return `<button class="btn quiet letter-link" data-letter><span>Simulated future letter</span><span>Secondary view →</span></button>`;
+    }
+    function reviewControls(d) {
+      return `<details class="prototype-panel"><summary>Prototype controls</summary><div class="controls"><button class="btn" data-action="start">Restart full journey</button><button class="btn primary" data-action="next">${nextLabel()}</button><button class="btn" data-action="fixed">Upload corrected evidence</button><button class="btn" data-action="unchanged">Upload unchanged evidence</button><button class="btn" data-action="review">Send for human review</button><button class="btn" data-action="complete">Complete case</button><span class="state-line">State: step ${state.step} · evidence v${d.version} · ${d.open} open · review ${d.reviewSent ? 'routed' : 'not routed'} · ${state.complete ? 'complete' : 'in progress'}</span></div></details>`;
+    }
+    function stageTitle() { return ['Open case PD-4471', 'Choose the verified policy', 'Upload discharge summary', 'Upload itemised final bill', 'Create work list'][state.step + 1] || 'Create work list'; }
+    function nextLabel() {
+      if (state.step < 4) return stageTitle();
+      if (state.step === 4) return 'Open ask sheet';
+      if (!state.corrected) return 'Upload corrected evidence';
+      if (!state.reviewSent) return 'Send for human review';
+      if (!state.complete) return 'Complete case';
+      return 'Case complete';
+    }
+
+    function openAsk() { renderAsk(); document.getElementById('ask-dialog').showModal(); }
     function renderAsk() {
-      const risk = WorkListModel.derived(state).risks.find(r => r.id === state.askSheet);
-      const root = document.getElementById('ask-body');
-      if (!risk || !risk.ask) { root.innerHTML = '<p>No ask selected.</p>'; return; }
       const names = { en: 'English', kn: 'ಕನ್ನಡ', hi: 'हिन्दी' };
-      root.innerHTML = `<span class="pill ${risk.kind === 'review' ? 'review' : 'risk'}">${risk.kind === 'review' ? 'Doctor question · needs human review' : 'Document request'}</span><div class="lang-tabs">${Object.entries(names).map(([code,label]) => `<button class="btn ${state.askLanguage === code ? 'secondary' : ''}" data-lang="${code}">${label}</button>`).join('')}</div><div class="ask-copy" lang="${state.askLanguage}">${esc(risk.ask[state.askLanguage])}</div><p class="sub" style="margin-top:14px">Opening or showing this sheet never changes the warning. POSTDATED waits for new document evidence.</p>`;
-      root.querySelectorAll('[data-lang]').forEach(btn => btn.addEventListener('click', () => dispatch({ type: 'SET_LANGUAGE', language: btn.dataset.lang })));
+      const root = document.getElementById('ask-body');
+      root.innerHTML = `<div class="languages">${Object.entries(names).map(([code,name]) => `<button class="btn ${state.askLanguage === code ? 'primary' : ''}" data-lang="${code}">${name}</button>`).join('')}</div><div class="ask" lang="${state.askLanguage}">${risk.asks[state.askLanguage]}</div><p class="sub" style="margin-top:13px">Showing this sheet does not change the warning. Only new evidence can clear it.</p>`;
+      root.querySelectorAll('[data-lang]').forEach(button => button.addEventListener('click', () => { state.askLanguage = button.dataset.lang; renderAsk(); }));
     }
-
     function renderLetter(d) {
-      const preventable = d.risks.filter(r => r.kind === 'preventable' && r.status !== 'cleared');
-      const simulated = d.unavoidableTotal + preventable.reduce((sum, r) => sum + (r.amount || 0), 0);
-      document.getElementById('letter-body').innerHTML = `<div class="letter"><div class="stamp">SIMULATION · NOT ISSUED BY NIVA BUPA</div><h3>Possible future claim deductions</h3><p>Dated 3 September 2026</p><p class="letter-total">${money(simulated)} simulated exposure</p><p>This secondary view explains the current work list. It is a risk forecast, not a real letter, promise, or calibrated claim outcome.</p><ul>${d.risks.filter(r => r.kind !== 'review' && r.status !== 'cleared').map(r => `<li>${money(r.amount)} · ${esc(r.title)}</li>`).join('')}</ul>${d.reviewOutstanding ? '<p><strong>Needs human review:</strong> reason for inpatient admission is unclear. No rupee figure is shown.</p>' : ''}</div>`;
+      const exposure = 48000 + (d.riskCleared ? 0 : 84000);
+      document.getElementById('letter-body').innerHTML = `<div class="letter"><div class="simulation">SIMULATION · NOT ISSUED BY NIVA BUPA</div><h2>Possible future deductions</h2><p style="font-size:28px;color:var(--red);font-weight:800">₹${exposure.toLocaleString('en-IN')}</p><p>This explains the current work list. It is not a real letter, promise, or calibrated claim outcome.</p></div>`;
     }
+    function render() {
+      const d = derived();
+      const content = variant === 'A' ? variantA(d) : variant === 'B' ? variantB(d) : variantC(d);
+      document.getElementById('app').innerHTML = content;
+      document.getElementById('variant-name').textContent = variants[variant];
+      document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => dispatch(button.dataset.action)));
+      document.querySelectorAll('[data-letter]').forEach(button => button.addEventListener('click', () => { renderLetter(d); document.getElementById('letter-dialog').showModal(); }));
+    }
+    function switchVariant(direction) {
+      const next = (variantKeys.indexOf(variant) + direction + variantKeys.length) % variantKeys.length;
+      variant = variantKeys[next];
+      const url = new URL(location.href); url.searchParams.set('variant', variant); history.replaceState({}, '', url);
+      render();
+    }
+    function esc(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char])); }
 
-    document.querySelectorAll('[data-close]').forEach(btn => btn.addEventListener('click', () => document.getElementById(btn.dataset.close).close()));
+    document.getElementById('prev-variant').addEventListener('click', () => switchVariant(-1));
+    document.getElementById('next-variant').addEventListener('click', () => switchVariant(1));
+    document.addEventListener('keydown', event => {
+      if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName) || document.activeElement.isContentEditable) return;
+      if (event.key === 'ArrowLeft') switchVariant(-1);
+      if (event.key === 'ArrowRight') switchVariant(1);
+    });
+    document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.close).close()));
     document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
     render();
   </script>
