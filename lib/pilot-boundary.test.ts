@@ -9,6 +9,7 @@ import {
 } from './pilot-boundary';
 
 const PILOT_TOKEN = 'pilot-test-token';
+const PILOT_USER = 'desk-executive-1';
 const BASE_REQUEST = {
   mode: 'fake-challenge',
   challenge_id: 'fake-challenge-1',
@@ -18,7 +19,7 @@ const BASE_REQUEST = {
 
 const configured: PilotBoundaryConfig = {
   enabled: true,
-  accessToken: PILOT_TOKEN,
+  accessUsers: new Map([[PILOT_USER, PILOT_TOKEN]]),
   providerApproved: true,
   providerApiKey: 'pilot-provider-test-key',
   challengeDigests: new Map([
@@ -34,9 +35,11 @@ const successfulProvider: PilotProvider = {
 function request(
   body: Record<string, unknown> = BASE_REQUEST,
   token: string | null = PILOT_TOKEN,
+  user: string | null = PILOT_USER,
 ): Request {
   const headers = new Headers({ 'content-type': 'application/json' });
   if (token) headers.set('authorization', `Bearer ${token}`);
+  if (user) headers.set('x-pilot-user', user);
 
   return new Request('http://localhost/api/pilot/analyze', {
     method: 'POST',
@@ -57,12 +60,25 @@ describe('pilot HTTP boundary', () => {
   it('is disabled by default when no pilot environment is configured', () => {
     expect(readPilotBoundaryConfig({})).toEqual({
       enabled: false,
-      accessToken: null,
+      accessUsers: new Map(),
       providerApproved: false,
       providerApiKey: null,
       challengeDigests: new Map(),
       timeoutMs: 15_000,
     });
+  });
+
+  it('loads distinct named pilot credentials from configuration', () => {
+    const config = readPilotBoundaryConfig({
+      POSTDATED_PILOT_USERS: 'desk-executive-1=first-token-123456,desk-executive-2=second-token-123456',
+    });
+
+    expect(config.accessUsers).toEqual(
+      new Map([
+        ['desk-executive-1', 'first-token-123456'],
+        ['desk-executive-2', 'second-token-123456'],
+      ]),
+    );
   });
 
   it('is disabled by default and never invokes the provider', async () => {
@@ -113,6 +129,32 @@ describe('pilot HTTP boundary', () => {
     });
   });
 
+  it('requires a named pilot user instead of accepting a shared bearer token', async () => {
+    const response = await handlePilotRequest(request(BASE_REQUEST, PILOT_TOKEN, null), {
+      config: configured,
+      provider: successfulProvider,
+    });
+
+    expect(response.status).toBe(401);
+    expect((await json(response)).error).toEqual({
+      code: 'UNAUTHENTICATED',
+      message: 'Pilot authentication is required.',
+    });
+  });
+
+  it('rejects a token issued to a different named pilot user', async () => {
+    const response = await handlePilotRequest(request(BASE_REQUEST, PILOT_TOKEN, 'desk-executive-2'), {
+      config: configured,
+      provider: successfulProvider,
+    });
+
+    expect(response.status).toBe(401);
+    expect((await json(response)).error).toEqual({
+      code: 'UNAUTHENTICATED',
+      message: 'Pilot authentication is required.',
+    });
+  });
+
   it('accepts an explicit fake challenge through the controllable provider adapter', async () => {
     const response = await handlePilotRequest(request(), {
       config: configured,
@@ -120,6 +162,8 @@ describe('pilot HTTP boundary', () => {
     });
 
     expect(response.status).toBe(200);
+    expect(response.headers.get('cache-control')).toBe('no-store');
+    expect(response.headers.get('x-frame-options')).toBe('DENY');
     expect(await json(response)).toEqual({
       extraction: SEEDED_EXTRACTION,
       source: 'pilot-provider',

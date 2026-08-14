@@ -276,8 +276,16 @@ credentials are configured; it accepts only authenticated `fake-challenge` submi
 an image digest is allowlisted, and it never falls back to the demo fixture. Do not enable
 those pilot settings in a public deployment. The protected deployment requires
 `POSTDATED_PILOT_ENABLED=true`, `POSTDATED_PILOT_PROVIDER_APPROVED=true`, dedicated
-`POSTDATED_PILOT_ACCESS_TOKEN` and `POSTDATED_PILOT_ANTHROPIC_API_KEY` values, plus
+`POSTDATED_PILOT_USERS=user-id=long-random-token` and `POSTDATED_PILOT_ANTHROPIC_API_KEY` values, plus
 `POSTDATED_PILOT_FAKE_CHALLENGES=fake-challenge-1=<sha256>` for each fake challenge image.
+Each approved employee gets a distinct `user-id` and bearer token; the request must send both
+`X-Pilot-User` and `Authorization: Bearer ...`. The pilot route does not accept a shared token.
+For the public route, keep `POSTDATED_PUBLIC_DEMO_LIVE` unset (or `false`) unless the deployment
+has a reviewed fake-document set. Enabling live public demonstration additionally requires
+`POSTDATED_PUBLIC_DEMO_LIVE=true` and `POSTDATED_PUBLIC_DEMO_FAKE_DIGESTS=<sha256>,...`.
+Every upload must match the approved digest list; an unknown upload is rejected. For an approved
+fake document, leaving the live gate or provider key unset returns only the explicit seeded demo
+and never calls a provider.
 
 Two other things worth running:
 

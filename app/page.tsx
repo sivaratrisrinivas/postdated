@@ -180,8 +180,9 @@ function Capture({
       </button>
 
       <p className="rounded-xl border border-[#E5A23F]/20 bg-[#E5A23F]/[0.06] px-4 py-3 text-[0.74rem] leading-relaxed text-[#FFD79B]/80">
-        Public demonstration only: use fake or fully anonymised documents. Real patient
-        documents are not accepted here and cannot enter the protected pilot boundary.
+        Public demonstration only: use a deployment-approved fake or fully anonymised
+        document. Unknown uploads are rejected. Real patient documents are not accepted
+        here and cannot enter the protected pilot boundary.
       </p>
     </div>
   );

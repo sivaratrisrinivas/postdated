@@ -5,7 +5,7 @@ import { createPilotPostHandler } from './route';
 
 const config: PilotBoundaryConfig = {
   enabled: true,
-  accessToken: 'pilot-test-token',
+  accessUsers: new Map([['desk-executive-1', 'pilot-test-token']]),
   providerApproved: true,
   providerApiKey: 'pilot-provider-test-key',
   challengeDigests: new Map([
@@ -19,6 +19,7 @@ function request(): Request {
     method: 'POST',
     headers: {
       authorization: 'Bearer pilot-test-token',
+      'x-pilot-user': 'desk-executive-1',
       'content-type': 'application/json',
     },
     body: JSON.stringify({

@@ -11,7 +11,7 @@ export { PilotProviderFailure } from './pilot-provider';
 
 export interface PilotBoundaryConfig {
   enabled: boolean;
-  accessToken: string | null;
+  accessUsers: ReadonlyMap<string, string>;
   providerApproved: boolean;
   providerApiKey: string | null;
   challengeDigests: ReadonlyMap<string, string>;
@@ -24,24 +24,39 @@ export interface PilotBoundaryDependencies {
 }
 
 const MAX_IMAGE_BASE64_LENGTH = 11_000_000;
-const CHALLENGE_ID = /^fake-[a-z0-9][a-z0-9._-]{0,63}$/i;
+const CHALLENGE_ID_PATTERN = /^fake-[a-z0-9][a-z0-9._-]{0,63}$/i;
+const PILOT_USER_ID_PATTERN = /^[a-z0-9][a-z0-9._-]{0,63}$/i;
 const MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
 
 export function readPilotBoundaryConfig(
   env: Record<string, string | undefined> = process.env,
 ): PilotBoundaryConfig {
   const timeout = Number(env.POSTDATED_PILOT_TIMEOUT_MS ?? 15_000);
+  const accessUsers = new Map<string, string>();
+  for (const entry of (env.POSTDATED_PILOT_USERS ?? '').split(',')) {
+    const separator = entry.indexOf('=');
+    if (separator <= 0) continue;
+    const userId = entry.slice(0, separator).trim();
+    const token = entry.slice(separator + 1).trim();
+    if (PILOT_USER_ID_PATTERN.test(userId) && token.length >= 16 && token.length <= 256) {
+      accessUsers.set(userId, token);
+    }
+  }
   const challengeDigests = new Map<string, string>();
   for (const entry of (env.POSTDATED_PILOT_FAKE_CHALLENGES ?? '').split(',')) {
     const [challengeId, digest] = entry.trim().split('=');
-    if (challengeId && CHALLENGE_ID.test(challengeId) && /^[a-f0-9]{64}$/i.test(digest ?? '')) {
+    if (
+      challengeId &&
+      CHALLENGE_ID_PATTERN.test(challengeId) &&
+      /^[a-f0-9]{64}$/i.test(digest ?? '')
+    ) {
       challengeDigests.set(challengeId, digest.toLowerCase());
     }
   }
 
   return {
     enabled: env.POSTDATED_PILOT_ENABLED === 'true',
-    accessToken: env.POSTDATED_PILOT_ACCESS_TOKEN ?? null,
+    accessUsers,
     providerApproved: env.POSTDATED_PILOT_PROVIDER_APPROVED === 'true',
     providerApiKey: env.POSTDATED_PILOT_ANTHROPIC_API_KEY ?? null,
     challengeDigests,
@@ -53,8 +68,11 @@ function responseHeaders(): Headers {
   return new Headers({
     'cache-control': 'no-store',
     'content-type': 'application/json',
+    'content-security-policy': "default-src 'none'; frame-ancestors 'none'",
     'referrer-policy': 'no-referrer',
+    'strict-transport-security': 'max-age=31536000; includeSubDomains',
     'x-content-type-options': 'nosniff',
+    'x-frame-options': 'DENY',
   });
 }
 
@@ -76,6 +94,11 @@ function bearerToken(request: Request): string | null {
   return token || null;
 }
 
+function pilotUser(request: Request): string | null {
+  const userId = request.headers.get('x-pilot-user')?.trim();
+  return userId && PILOT_USER_ID_PATTERN.test(userId) ? userId : null;
+}
+
 function tokensMatch(actual: string | null, expected: string): boolean {
   if (!actual) return false;
   const actualBytes = Buffer.from(actual);
@@ -83,6 +106,15 @@ function tokensMatch(actual: string | null, expected: string): boolean {
   return (
     actualBytes.length === expectedBytes.length && timingSafeEqual(actualBytes, expectedBytes)
   );
+}
+
+function authenticatedPilotUser(
+  request: Request,
+  accessUsers: ReadonlyMap<string, string>,
+): string | null {
+  const userId = pilotUser(request);
+  const expectedToken = userId ? accessUsers.get(userId) : undefined;
+  return expectedToken && tokensMatch(bearerToken(request), expectedToken) ? userId : null;
 }
 
 function isBase64Image(value: unknown): value is string {
@@ -106,7 +138,7 @@ function parseRequest(body: unknown): {
     candidate.mode !== 'fake-challenge' ||
     !isBase64Image(candidate.image) ||
     typeof candidate.challenge_id !== 'string' ||
-    !CHALLENGE_ID.test(candidate.challenge_id) ||
+    !CHALLENGE_ID_PATTERN.test(candidate.challenge_id) ||
     !MEDIA_TYPES.includes(candidate.media_type as (typeof MEDIA_TYPES)[number])
   ) {
     return null;
@@ -142,7 +174,7 @@ export async function handlePilotRequest(
     return errorResponse(503, 'PILOT_DISABLED', 'The protected pilot boundary is disabled.');
   }
   if (
-    !config.accessToken ||
+    config.accessUsers.size === 0 ||
     !config.providerApproved ||
     !config.providerApiKey ||
     config.challengeDigests.size === 0 ||
@@ -154,7 +186,7 @@ export async function handlePilotRequest(
       'The protected pilot boundary is not configured.',
     );
   }
-  if (!tokensMatch(bearerToken(request), config.accessToken)) {
+  if (!authenticatedPilotUser(request, config.accessUsers)) {
     return errorResponse(401, 'UNAUTHENTICATED', 'Pilot authentication is required.');
   }
 
