@@ -1,12 +1,5 @@
 @import "tailwindcss";
 
-:root {
-  --font-geist-sans: Arial, "Noto Sans", system-ui, sans-serif;
-  --font-geist-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
-  --font-kannada: "Noto Sans Kannada", "Nirmala UI", sans-serif;
-  --font-devanagari: "Noto Sans Devanagari", "Nirmala UI", sans-serif;
-}
-
 @theme inline {
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);

@@ -18,7 +18,6 @@ Transcribed from [POSTDATED.md](./POSTDATED.md), which is the spec. Where the tw
 | **Proportionate deduction** | The cut applied across the *whole* bill — not just the room charge — when the room exceeds the sub-limit. The exact scope is per-insurer clause text; see `docs/research/policy-parameters.md`. |
 | **Non-payable consumables** | Gloves, syringes, PPE. Excluded by the IRDAI standardised list and per-insurer lists. |
 | **Pre-auth** | Pre-authorisation — the cashless approval request the hospital desk files *before* treatment. The B2B surface. |
-| **Hospital insurance-desk executive** | A hospital employee who prepares and follows cashless claims using their knowledge of insurer and TPA rules. Not an insurer or TPA employee. |
 | **Medical necessity** | Whether the clinical narrative establishes that inpatient admission was required. The judgement Claude makes; not a fact it may invent. |
 
 ## The three buckets
@@ -37,27 +36,7 @@ Showing Bucket A honestly is load-bearing: it is the reason a user believes the 
 
 | Term | Means |
 |---|---|
-| **Shadow pilot** | A supervised hospital trial where staff finish the normal claim process before inspecting POSTDATED and never change a real case because of its output. Corrected-document practice uses fake cases; results are measured before anyone depends on them. |
-| **Pilot access** | Each approved hospital employee uses their own secure account. The pilot needs basic login and access records, but not a full hospital identity-system connection. |
-| **Measurement receipt** | A patient-free record returned to the hospital after one shadow run, containing the frozen system version and observations needed for local evaluation. The hospital attaches it to its private case record; POSTDATED retains no shared case identifier and receives only approved aggregate outcomes. |
-| **Pilot-wide stop** | An immediate block on all real-document uploads after a safety, privacy, policy-rule, access, or deletion failure. Any participant may trigger it without prior approval; named hospital and POSTDATED owners control restart. |
-| **Work list** | The hospital insurance-desk executive's main screen: possible claim risks, missing documents, doctor questions, and rupee exposure. The letter is a secondary explanation screen. |
-| **Risk forecast** | A simulation of preventable disallowance risks and the arguments a payer may make. It is not a promise or a calibrated prediction of the claim outcome. |
-| **Evidence-based resolution** | A risk is cleared only when comparing the old and new documents finds evidence that the problem was fixed. A button press or a new upload alone cannot clear it. |
-| **Draft policy rule** | A proposed translation of policy documents into calculator inputs. A Policy Analyst owns it, AI may help prepare it, and it cannot affect money until it is checked and approved by people. |
-| **Policy configuration** | The complete set of documents describing the cover a customer actually bought: the base policy wording, Policy Schedule, riders or add-ons, endorsements, and later change notices. Missing or conflicting documents require human review before a rupee result may be shown. |
-| **Policy override** | Clear wording in one policy document that changes or replaces a rule in another document. A newer date alone does not prove an override; without clear wording, the conflict needs human review. |
-| **Rule evidence** | The proof kept with a policy rule: exact source passages, document and version identity, applicable Schedule or rider differences, uncertainty, named human decisions, test results, and change history. A rule without this proof cannot affect money. |
-| **Rule test pack** | The agreed examples a policy rule must pass before affecting money, including applying and non-applying cases, boundaries, Schedule and rider differences, missing or conflicting documents, a full sample bill, and earlier tests. AI may suggest cases but cannot provide the trusted rupee answers. |
-| **Policy Analyst** | The named person who creates and owns a draft policy rule. They may use AI, but cannot check or approve their own draft. |
-| **Policy Reviewer** | A different named person who checks every part of a draft policy rule against the original policy documents. |
-| **Policy Rules Owner** | The senior named person accountable for approving or rejecting a checked policy rule. |
-| **Pilot Publisher** | The named person allowed to activate an approved policy rule for pilot use. In a small pilot, the Policy Rules Owner may also hold this role. |
-| **Verified policy rule** | A rule for one exact policy configuration whose evidence was checked by a Policy Reviewer, whose full test pack passed, and whose exact version was approved and locked by the Policy Rules Owner. AI may prepare a draft but cannot check or approve it. |
-| **Pilot-active policy rule** | A verified policy rule whose exact locked version a named Pilot Publisher has separately switched on for pilot calculations. Approval alone does not make a rule pilot-active. |
-| **Disabled policy rule** | A rule stopped from affecting new calculations because it may be wrong or unsafe. It remains in the history with its evidence, past uses, reason for disabling, and the person and time responsible for the emergency stop. |
-| **Needs human review** | The result shown when POSTDATED lacks enough reliable evidence. Uncertainty must remain visible and can never be changed into a confident green result. |
-| **The letter** | The hero artefact: the risk forecast rendered as a simulated, forward-dated payer letter with itemised rupee exposure. Not a real denial letter or guaranteed claim outcome. |
+| **The letter** | The hero artefact. The future denial letter, forward-dated ~26 days, itemised in rupees. Not "the report", not "the analysis". |
 | **The ask sheet** | What the user is told to physically do. Rendered EN / KN / HI, designed to be held up to a ward clerk. |
 | **Document demand** | Output type 1 — *"ask the nursing station for the indoor case papers."* |
 | **Doctor question** | Output type 2 — a question only the treating doctor can answer and sign. |

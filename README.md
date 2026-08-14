@@ -196,23 +196,6 @@ document. That side is described in the pitch and deliberately not built: it was
 purpose to make the consumer half work properly in the time available. See
 `BUILD-TODAY.md` for what was cut and why.
 
-## Current safety boundary
-
-This repository is currently a mock/demo and offline-evaluation build. The committed sample
-paperwork is fictional. The public path accepts only explicitly allowlisted `fake-demo`
-documents; an approved anonymised document requires an explicitly enabled provider, and a
-provider failure remains a visible failure rather than becoming the seeded case.
-
-The AWS path in `infra/pilot/` is a separate, disabled-by-default fake-challenge shell. It is
-not the hospital pilot and it does not authorize real patient-document processing. AWS/SAM
-tooling is not required to run the mock demo or its local tests.
-
-The full [issue #9 strict shadow-pilot specification](https://github.com/sivaratrisrinivas/postdated/issues/9)
-applies before any real upload: named accounts and MFA, consent and notice, approved provider
-and transfer terms, retention and deletion evidence, patient-free audit and stop controls,
-independent evaluation, and the hospital's contractual and operational approvals. Keep real
-uploads disabled until every applicable gate is evidenced for the exact deployed version.
-
 ## The files
 
 | Path | |
@@ -226,8 +209,7 @@ uploads disabled until every applicable gate is evidenced for the exact deployed
 | `lib/deduct.ts` | Every calculation. 24 tests |
 | `lib/guard.ts` | The check that stops the system inventing medical facts. 14 tests |
 | `lib/policy.ts` | The policy, as read by hand from the wording |
-| `app/api/extract/route.ts` | Public fake/anonymised intake; the key stays server-side |
-| `infra/pilot/` | Separate AWS Mumbai pilot deployment, disabled by default |
+| `app/api/extract/route.ts` | The one place Claude is called. The key stays server-side |
 
 ## Trying it in one minute, without installing anything
 
@@ -287,29 +269,10 @@ npm run dev
 Then open **http://localhost:3000** and follow steps 3 to 7 above. The sample files are
 already in the repo at `public/samples/`, so you can pick them straight off disk.
 
-The public demonstration accepts only fake or fully anonymised documents. Its extraction
-route requires an explicit `fake-demo` mode, an approved document manifest, and no access to
-the protected pilot deployment. Configure each public document as
-`POSTDATED_PUBLIC_DEMO_DOCUMENTS=<id>:<fake|anonymised>:<sha256>,...`. The document id and kind
-are an operator attestation that must be reviewed before deployment; a digest alone cannot prove
-that a document is fake. Unknown uploads are rejected visibly and never become the seeded case.
-Only an approved `fake` document may use the seeded fixture. An approved `anonymised` document
-requires `POSTDATED_PUBLIC_DEMO_LIVE=true` and `ANTHROPIC_API_KEY`; provider failure returns a
-visible error rather than synthetic output.
-
-The protected pilot is not a Next route. Deploy `infra/pilot/template.yaml` to the approved AWS
-account and Mumbai region. It is disabled by default and accepts only authenticated
-`fake-challenge` submissions through the separate HTTP API. Set `PilotEnabled=false` and
-`ProviderApproved=false` until every issue #9 gate is complete. The deployment requires distinct
-`PilotUsers=user-id=long-random-token` credentials and
-`FakeChallenges=fake-challenge-1=<sha256>` values; each request sends both `X-Pilot-User` and
-`Authorization: Bearer ...`. It uses the Bedrock adapter, keeps application errors patient-free,
-and does not fall back to the public fixture.
-
 Two other things worth running:
 
 ```sh
-npm test          # money, boundary, and medical-word checks
+npm test          # 38 tests. The money and the medical-word check are both covered
 npm run build     # what gets deployed
 ```
 
