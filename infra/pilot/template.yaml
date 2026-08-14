@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: POSTDATED's disabled-by-default fake-challenge pilot intake in AWS Mumbai.
+
+Parameters:
+  PilotEnabled:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['false', 'true']
+    Description: Keep false until every shadow-pilot gate is approved and tested.
+  ProviderApproved:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['false', 'true']
+    Description: Separate named approval for the configured Bedrock provider.
+  PilotUsers:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Comma-separated user-id=long-random-token entries.
+  FakeChallenges:
+    Type: String
+    NoEcho: true
+    Default: ''
+    Description: Comma-separated challenge-id=sha256 entries for fake documents only.
+  BedrockModelId:
+    Type: String
+    Default: 'anthropic.claude-sonnet-4-6-v1:0'
+    Description: Approved Bedrock model or inference profile identifier.
+  PilotTimeoutMs:
+    Type: String
+    Default: '15000'
+  AllowedOrigin:
+    Type: String
+    Default: 'https://postdated.vercel.app'
+    Description: Exact public origin allowed to call the protected pilot HTTP API.
+
+Globals:
+  Function:
+    Runtime: nodejs22.x
+    Architectures: [arm64]
+    Timeout: 60
+    MemorySize: 1024
+    Tracing: Disabled
+    Environment:
+      Variables:
+        POSTDATED_PILOT_ENABLED: !Ref PilotEnabled
+        POSTDATED_PILOT_PROVIDER_APPROVED: !Ref ProviderApproved
+        POSTDATED_PILOT_USERS: !Ref PilotUsers
+        POSTDATED_PILOT_FAKE_CHALLENGES: !Ref FakeChallenges
+        POSTDATED_PILOT_BEDROCK_MODEL_ID: !Ref BedrockModelId
+        POSTDATED_PILOT_TIMEOUT_MS: !Ref PilotTimeoutMs
+
+Resources:
+  PilotHttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      StageName: $default
+      CorsConfiguration:
+        AllowOrigins:
+          - !Ref AllowedOrigin
+        AllowHeaders:
+          - authorization
+          - content-type
+          - x-pilot-user
+        AllowMethods:
+          - POST
+          - OPTIONS
+        MaxAge: 60
+
+  PilotFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: infra/pilot/handler.handler
+      CodeUri: ../..
+      Events:
+        Analyze:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref PilotHttpApi
+            Path: /pilot/analyze
+            Method: POST
+      Policies:
+        - Statement:
+            - Sid: InvokeApprovedBedrockModel
+              Effect: Allow
+              Action:
+                - bedrock:Converse
+              Resource: !Sub arn:${AWS::Partition}:bedrock:${AWS::Region}::foundation-model/${BedrockModelId}
+    Metadata:
+      BuildMethod: esbuild
+      BuildProperties:
+        EntryPoints:
+          - infra/pilot/handler.ts
+        Target: es2022
+        Minify: true
+        Sourcemap: false
+
+  PilotFunctionLogGroup:
+    Type: AWS::Logs::LogGroup
+    DeletionPolicy: Delete
+    UpdateReplacePolicy: Delete
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${PilotFunction}
+      RetentionInDays: 1
+
+Outputs:
+  PilotApiUrl:
+    Description: Protected pilot endpoint; keep this URL out of the public demo deployment.
+    Value: !Sub https://${PilotHttpApi}.execute-api.${AWS::Region}.${AWS::URLSuffix}/pilot/analyze
+  PilotEnabled:
+    Description: Effective pilot gate. Must remain false until the external gates are complete.
+    Value: !Ref PilotEnabled

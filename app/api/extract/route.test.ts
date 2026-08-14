@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { SEEDED_EXTRACTION } from '@/lib/fixture';
 import { readPublicDemoConfig, type PublicDemoConfig } from '@/lib/public-demo';
-import { createPublicDemoPostHandler, POST } from './route';
+import { createPublicDemoPostHandler } from '@/lib/public-demo-handler';
+import { POST } from './route';
 
 const BASE_REQUEST = {
   image: 'aGVsbG8=',
@@ -33,14 +34,17 @@ describe('public fake-demo extraction boundary', () => {
     expect(
       readPublicDemoConfig({
         ANTHROPIC_API_KEY: 'public-key',
-        POSTDATED_PUBLIC_DEMO_FAKE_DIGESTS:
-          '2CF24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824,not-a-digest',
+        POSTDATED_PUBLIC_DEMO_DOCUMENTS:
+          'ravi-demo:fake:2CF24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824,redacted-demo:anonymised:not-a-digest',
       }),
     ).toEqual({
       liveEnabled: false,
       providerApiKey: 'public-key',
-      approvedImageDigests: new Set([
-        '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+      approvedDocuments: new Map([
+        [
+          '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+          { id: 'ravi-demo', kind: 'fake' },
+        ],
       ]),
     });
   });
@@ -57,8 +61,11 @@ describe('public fake-demo extraction boundary', () => {
       () => ({
         liveEnabled: false,
         providerApiKey: null,
-        approvedImageDigests: new Set([
-          '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+        approvedDocuments: new Map([
+          [
+            '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+            { id: 'ravi-demo', kind: 'fake' },
+          ],
         ]),
       }),
       () => ({ analyze: async () => SEEDED_EXTRACTION }),
@@ -76,7 +83,12 @@ describe('public fake-demo extraction boundary', () => {
     const config: PublicDemoConfig = {
       liveEnabled: false,
       providerApiKey: 'public-test-key',
-      approvedImageDigests: new Set(['2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824']),
+      approvedDocuments: new Map([
+        [
+          '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+          { id: 'ravi-demo', kind: 'fake' },
+        ],
+      ]),
     };
     const post = createPublicDemoPostHandler(() => config, () => ({
       analyze: async () => {
@@ -94,7 +106,7 @@ describe('public fake-demo extraction boundary', () => {
 
   it('rejects an unapproved image even when the public live gate is off', async () => {
     const post = createPublicDemoPostHandler(
-      () => ({ liveEnabled: false, providerApiKey: null, approvedImageDigests: new Set() }),
+      () => ({ liveEnabled: false, providerApiKey: null, approvedDocuments: new Map() }),
       () => ({ analyze: async () => SEEDED_EXTRACTION }),
     );
 
@@ -112,7 +124,7 @@ describe('public fake-demo extraction boundary', () => {
     const config: PublicDemoConfig = {
       liveEnabled: true,
       providerApiKey: 'public-test-key',
-      approvedImageDigests: new Set(),
+      approvedDocuments: new Map(),
     };
     const post = createPublicDemoPostHandler(() => config, () => ({
       analyze: async () => {
@@ -135,7 +147,12 @@ describe('public fake-demo extraction boundary', () => {
     const config: PublicDemoConfig = {
       liveEnabled: true,
       providerApiKey: 'public-test-key',
-      approvedImageDigests: new Set(['2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824']),
+      approvedDocuments: new Map([
+        [
+          '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+          { id: 'ravi-demo', kind: 'fake' },
+        ],
+      ]),
     };
     const post = createPublicDemoPostHandler(() => config, () => ({
       analyze: async () => SEEDED_EXTRACTION,
@@ -145,5 +162,35 @@ describe('public fake-demo extraction boundary', () => {
 
     expect(response.status).toBe(200);
     expect((await json(response)).source).toBe('live');
+  });
+
+  it('does not substitute the seeded case for an approved anonymised document', async () => {
+    let invoked = false;
+    const post = createPublicDemoPostHandler(
+      () => ({
+        liveEnabled: false,
+        providerApiKey: null,
+        approvedDocuments: new Map([
+          [
+            '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+            { id: 'redacted-demo', kind: 'anonymised' },
+          ],
+        ]),
+      }),
+      () => ({
+        analyze: async () => {
+          invoked = true;
+          return SEEDED_EXTRACTION;
+        },
+      }),
+    );
+
+    const response = await post(request({ ...BASE_REQUEST, mode: 'fake-demo' }));
+
+    expect(response.status).toBe(503);
+    expect(await json(response)).toEqual({
+      error: 'live provider required for anonymised document',
+    });
+    expect(invoked).toBe(false);
   });
 });

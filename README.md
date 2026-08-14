@@ -209,7 +209,8 @@ purpose to make the consumer half work properly in the time available. See
 | `lib/deduct.ts` | Every calculation. 24 tests |
 | `lib/guard.ts` | The check that stops the system inventing medical facts. 14 tests |
 | `lib/policy.ts` | The policy, as read by hand from the wording |
-| `app/api/extract/route.ts` | The one place Claude is called. The key stays server-side |
+| `app/api/extract/route.ts` | Public fake/anonymised intake; the key stays server-side |
+| `infra/pilot/` | Separate AWS Mumbai pilot deployment, disabled by default |
 
 ## Trying it in one minute, without installing anything
 
@@ -270,22 +271,23 @@ Then open **http://localhost:3000** and follow steps 3 to 7 above. The sample fi
 already in the repo at `public/samples/`, so you can pick them straight off disk.
 
 The public demonstration accepts only fake or fully anonymised documents. Its extraction
-route requires an explicit `fake-demo` mode and is separate from the protected pilot route.
-The protected route (`/api/pilot/analyze`) is disabled unless all dedicated pilot gates and
-credentials are configured; it accepts only authenticated `fake-challenge` submissions and
-an image digest is allowlisted, and it never falls back to the demo fixture. Do not enable
-those pilot settings in a public deployment. The protected deployment requires
-`POSTDATED_PILOT_ENABLED=true`, `POSTDATED_PILOT_PROVIDER_APPROVED=true`, dedicated
-`POSTDATED_PILOT_USERS=user-id=long-random-token` and `POSTDATED_PILOT_ANTHROPIC_API_KEY` values, plus
-`POSTDATED_PILOT_FAKE_CHALLENGES=fake-challenge-1=<sha256>` for each fake challenge image.
-Each approved employee gets a distinct `user-id` and bearer token; the request must send both
-`X-Pilot-User` and `Authorization: Bearer ...`. The pilot route does not accept a shared token.
-For the public route, keep `POSTDATED_PUBLIC_DEMO_LIVE` unset (or `false`) unless the deployment
-has a reviewed fake-document set. Enabling live public demonstration additionally requires
-`POSTDATED_PUBLIC_DEMO_LIVE=true` and `POSTDATED_PUBLIC_DEMO_FAKE_DIGESTS=<sha256>,...`.
-Every upload must match the approved digest list; an unknown upload is rejected. For an approved
-fake document, leaving the live gate or provider key unset returns only the explicit seeded demo
-and never calls a provider.
+route requires an explicit `fake-demo` mode, an approved document manifest, and no access to
+the protected pilot deployment. Configure each public document as
+`POSTDATED_PUBLIC_DEMO_DOCUMENTS=<id>:<fake|anonymised>:<sha256>,...`. The document id and kind
+are an operator attestation that must be reviewed before deployment; a digest alone cannot prove
+that a document is fake. Unknown uploads are rejected visibly and never become the seeded case.
+Only an approved `fake` document may use the seeded fixture. An approved `anonymised` document
+requires `POSTDATED_PUBLIC_DEMO_LIVE=true` and `ANTHROPIC_API_KEY`; provider failure returns a
+visible error rather than synthetic output.
+
+The protected pilot is not a Next route. Deploy `infra/pilot/template.yaml` to the approved AWS
+account and Mumbai region. It is disabled by default and accepts only authenticated
+`fake-challenge` submissions through the separate HTTP API. Set `PilotEnabled=false` and
+`ProviderApproved=false` until every issue #9 gate is complete. The deployment requires distinct
+`PilotUsers=user-id=long-random-token` credentials and
+`FakeChallenges=fake-challenge-1=<sha256>` values; each request sends both `X-Pilot-User` and
+`Authorization: Bearer ...`. It uses the Bedrock adapter, keeps application errors patient-free,
+and does not fall back to the public fixture.
 
 Two other things worth running:
 

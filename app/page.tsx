@@ -6,6 +6,7 @@ import { GuardPanel } from '@/components/GuardPanel';
 import { Letter } from '@/components/Letter';
 import { compressForUpload } from '@/lib/compress';
 import { computeForecast } from '@/lib/deduct';
+import { parseExtraction } from '@/lib/extraction-contract';
 import { SEEDED_EXTRACTION, SEEDED_SUMMARY_TEXT } from '@/lib/fixture';
 import { NIVA_BUPA_REASSURE_2 } from '@/lib/policy';
 import type { Disallowance, Extraction } from '@/lib/types';
@@ -20,6 +21,8 @@ export default function Page() {
   const [extraction, setExtraction] = useState<Extraction | null>(null);
   const [source, setSource] = useState<Source>('live');
   const [latency, setLatency] = useState<number | null>(null);
+  const [captureError, setCaptureError] = useState<string | null>(null);
+  const [captureNotice, setCaptureNotice] = useState<string | null>(null);
   const [resolved, setResolved] = useState<ReadonlySet<string>>(new Set());
   const [activeLine, setActiveLine] = useState<Disallowance | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
@@ -31,6 +34,8 @@ export default function Page() {
 
   const capture = useCallback(async (file: File) => {
     setStatus('reading');
+    setCaptureError(null);
+    setCaptureNotice(null);
     const started = Date.now();
     try {
       const { base64, media_type } = await compressForUpload(file);
@@ -39,14 +44,24 @@ export default function Page() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ image: base64, media_type, mode: 'fake-demo' }),
       });
-      const data = await res.json();
-      setExtraction(data.extraction);
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        setCaptureError(publicDemoError(data));
+        setStatus('idle');
+        return;
+      }
+      if (!isRecord(data) || !('extraction' in data)) throw new Error('missing extraction');
+      setExtraction(parseExtraction(data.extraction));
       setSource(data.source === 'live' ? 'live' : 'fixture');
-      setLatency(data.latency_ms ?? Date.now() - started);
+      setLatency(typeof data.latency_ms === 'number' ? data.latency_ms : Date.now() - started);
+      setResolved(new Set());
     } catch {
       // §14: the demo never dies on the capture path.
       setExtraction(SEEDED_EXTRACTION);
       setSource('fixture');
+      setLatency(null);
+      setResolved(new Set());
+      setCaptureNotice('The upload could not be read, so the explicit seeded case is shown.');
     }
     setStatus('ready');
   }, []);
@@ -55,6 +70,8 @@ export default function Page() {
     setExtraction(SEEDED_EXTRACTION);
     setSource('fixture');
     setLatency(null);
+    setCaptureError(null);
+    setCaptureNotice(null);
     setResolved(new Set());
     setStatus('ready');
   }, []);
@@ -72,6 +89,8 @@ export default function Page() {
           busy={status === 'reading'}
           onPick={() => fileInput.current?.click()}
           onSeeded={runSeeded}
+          error={captureError}
+          notice={captureNotice}
         />
       )}
 
@@ -143,13 +162,27 @@ function Capture({
   busy,
   onPick,
   onSeeded,
+  error,
+  notice,
 }: {
   busy: boolean;
   onPick: () => void;
   onSeeded: () => void;
+  error: string | null;
+  notice: string | null;
 }) {
   return (
     <div className="mt-8 space-y-3">
+      {error && (
+        <p role="alert" className="rounded-xl border border-[#E5484D]/35 bg-[#E5484D]/[0.08] px-4 py-3 text-[0.74rem] leading-relaxed text-[#FFB5B7]">
+          {error}
+        </p>
+      )}
+      {notice && (
+        <p role="status" className="rounded-xl border border-[#E5A23F]/25 bg-[#E5A23F]/[0.07] px-4 py-3 text-[0.74rem] leading-relaxed text-[#FFD79B]/80">
+          {notice}
+        </p>
+      )}
       <button
         type="button"
         onClick={onPick}
@@ -186,6 +219,18 @@ function Capture({
       </p>
     </div>
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function publicDemoError(value: unknown): string {
+  if (isRecord(value)) {
+    if (typeof value.message === 'string') return value.message;
+    if (typeof value.error === 'string') return value.error;
+  }
+  return 'This document was rejected by the public fake-demo intake.';
 }
 
 function Provenance({ source, latency }: { source: Source; latency: number | null }) {

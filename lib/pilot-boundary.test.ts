@@ -21,7 +21,8 @@ const configured: PilotBoundaryConfig = {
   enabled: true,
   accessUsers: new Map([[PILOT_USER, PILOT_TOKEN]]),
   providerApproved: true,
-  providerApiKey: 'pilot-provider-test-key',
+  providerConfigured: true,
+  bedrockModelId: null,
   challengeDigests: new Map([
     ['fake-challenge-1', '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824'],
   ]),
@@ -62,7 +63,8 @@ describe('pilot HTTP boundary', () => {
       enabled: false,
       accessUsers: new Map(),
       providerApproved: false,
-      providerApiKey: null,
+      providerConfigured: false,
+      bedrockModelId: null,
       challengeDigests: new Map(),
       timeoutMs: 15_000,
     });
@@ -105,7 +107,7 @@ describe('pilot HTTP boundary', () => {
 
   it('fails closed when pilot credentials are missing', async () => {
     const response = await handlePilotRequest(request(), {
-      config: { ...configured, providerApiKey: null },
+      config: { ...configured, providerConfigured: false },
       provider: successfulProvider,
     });
 
@@ -191,6 +193,25 @@ describe('pilot HTTP boundary', () => {
       message: 'Only explicit fake-challenge submissions are accepted by the pilot boundary.',
     });
     expect(invoked).toBe(false);
+  });
+
+  it('rejects non-POST requests before reading a document', async () => {
+    const response = await handlePilotRequest(
+      new Request('http://localhost/api/pilot/analyze', {
+        method: 'GET',
+        headers: {
+          authorization: `Bearer ${PILOT_TOKEN}`,
+          'x-pilot-user': PILOT_USER,
+        },
+      }),
+      { config: configured, provider: successfulProvider },
+    );
+
+    expect(response.status).toBe(405);
+    expect((await json(response)).error).toEqual({
+      code: 'METHOD_NOT_ALLOWED',
+      message: 'Only POST requests are accepted.',
+    });
   });
 
   it('rejects a fake challenge image that is not on the approved digest list', async () => {

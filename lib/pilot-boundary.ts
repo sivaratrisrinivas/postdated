@@ -5,6 +5,7 @@ import {
   type PilotProvider,
   type PilotProviderInput,
 } from './pilot-provider';
+import { jsonSecurityResponse } from './http-security';
 
 export type { PilotProvider, PilotProviderInput } from './pilot-provider';
 export { PilotProviderFailure } from './pilot-provider';
@@ -13,7 +14,8 @@ export interface PilotBoundaryConfig {
   enabled: boolean;
   accessUsers: ReadonlyMap<string, string>;
   providerApproved: boolean;
-  providerApiKey: string | null;
+  providerConfigured: boolean;
+  bedrockModelId: string | null;
   challengeDigests: ReadonlyMap<string, string>;
   timeoutMs: number;
 }
@@ -58,33 +60,19 @@ export function readPilotBoundaryConfig(
     enabled: env.POSTDATED_PILOT_ENABLED === 'true',
     accessUsers,
     providerApproved: env.POSTDATED_PILOT_PROVIDER_APPROVED === 'true',
-    providerApiKey: env.POSTDATED_PILOT_ANTHROPIC_API_KEY ?? null,
+    bedrockModelId: env.POSTDATED_PILOT_BEDROCK_MODEL_ID?.trim() || null,
+    providerConfigured: Boolean(env.POSTDATED_PILOT_BEDROCK_MODEL_ID?.trim()),
     challengeDigests,
     timeoutMs: Number.isFinite(timeout) && timeout > 0 ? Math.min(timeout, 60_000) : 15_000,
   };
 }
 
-function responseHeaders(): Headers {
-  return new Headers({
-    'cache-control': 'no-store',
-    'content-type': 'application/json',
-    'content-security-policy': "default-src 'none'; frame-ancestors 'none'",
-    'referrer-policy': 'no-referrer',
-    'strict-transport-security': 'max-age=31536000; includeSubDomains',
-    'x-content-type-options': 'nosniff',
-    'x-frame-options': 'DENY',
-  });
-}
-
 function errorResponse(status: number, code: string, message: string): Response {
-  return new Response(JSON.stringify({ error: { code, message } }), {
-    status,
-    headers: responseHeaders(),
-  });
+  return jsonSecurityResponse({ error: { code, message } }, status);
 }
 
 function successResponse(payload: unknown): Response {
-  return new Response(JSON.stringify(payload), { status: 200, headers: responseHeaders() });
+  return jsonSecurityResponse(payload);
 }
 
 function bearerToken(request: Request): string | null {
@@ -170,13 +158,16 @@ export async function handlePilotRequest(
 ): Promise<Response> {
   const { config, provider } = dependencies;
 
+  if (request.method !== 'POST') {
+    return errorResponse(405, 'METHOD_NOT_ALLOWED', 'Only POST requests are accepted.');
+  }
   if (!config.enabled) {
     return errorResponse(503, 'PILOT_DISABLED', 'The protected pilot boundary is disabled.');
   }
   if (
     config.accessUsers.size === 0 ||
     !config.providerApproved ||
-    !config.providerApiKey ||
+    !config.providerConfigured ||
     config.challengeDigests.size === 0 ||
     !provider
   ) {
