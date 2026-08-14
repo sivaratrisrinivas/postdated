@@ -3,397 +3,302 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>POSTDATED prototype — minimal work list</title>
+  <title>POSTDATED — hospital desk prototype</title>
   <style>
     :root {
-      --ink: #15201c;
-      --muted: #63706a;
-      --line: #dce2de;
-      --paper: #fffefa;
-      --wash: #f4f6f4;
-      --green: #176648;
-      --green-soft: #e8f3ed;
-      --red: #a4453d;
-      --red-soft: #faece9;
-      --blue: #315f7b;
-      --blue-soft: #eaf1f5;
-      --amber: #805718;
-      --amber-soft: #fff4da;
-      --radius: 14px;
+      --ink: #14212b;
+      --ink-2: #33434f;
+      --muted: #667580;
+      --line: #dfe4e7;
+      --line-strong: #cbd3d8;
+      --canvas: #f3f5f6;
+      --paper: #ffffff;
+      --nav: #13232e;
+      --accent: #2f6768;
+      --accent-hover: #275859;
+      --accent-soft: #e6f0ef;
+      --warn: #975a16;
+      --warn-soft: #fbf2e4;
+      --danger: #9a4545;
+      --danger-soft: #f9eceb;
+      --success: #27674f;
+      --success-soft: #e7f2ed;
+      --review: #4c5e92;
+      --review-soft: #edf0f8;
+      --shadow: 0 18px 48px rgba(20, 33, 43, .09);
     }
     * { box-sizing: border-box; }
+    html { min-width: 980px; }
     body {
       margin: 0;
-      background: #eef1ef;
       color: var(--ink);
+      background: var(--canvas);
       font-family: Aptos, "Segoe UI", ui-sans-serif, system-ui, sans-serif;
+      font-size: 14px;
       line-height: 1.45;
     }
-    button, summary { font: inherit; }
-    button:focus-visible, summary:focus-visible { outline: 3px solid #77a4be; outline-offset: 2px; }
-    button { cursor: pointer; }
-    .appbar {
-      min-height: 58px;
-      padding: 12px max(18px, calc((100vw - 980px) / 2));
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 18px;
-      background: #173e32;
-      color: white;
-    }
-    .brand { font-size: 13px; font-weight: 850; letter-spacing: .13em; }
-    .session { display: flex; align-items: center; gap: 9px; min-width: 0; font-size: 13px; color: #d4e2dc; }
-    .avatar { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 50%; background: #e8f3ed; color: var(--green); font-size: 11px; font-weight: 850; }
-    .prototype { color: #a9c0b7; font-size: 11px; }
-    main { width: min(920px, calc(100% - 28px)); margin: 26px auto 130px; }
-    .case-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 22px; }
-    h1 { margin: 0; font-size: clamp(24px, 4vw, 34px); line-height: 1.12; letter-spacing: -.03em; }
-    h2, h3, p { margin-top: 0; }
-    h2 { margin-bottom: 3px; font-size: 18px; letter-spacing: -.015em; }
-    h3 { margin-bottom: 3px; font-size: 15px; }
-    .sub { margin: 6px 0 0; color: var(--muted); font-size: 13px; }
-    .meta { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
-    .chip { display: inline-flex; align-items: center; gap: 5px; border-radius: 999px; background: #e1e6e3; color: #4f5c56; padding: 5px 9px; font-size: 11px; font-weight: 750; }
-    .chip.good { background: var(--green-soft); color: var(--green); }
-    .chip.red { background: var(--red-soft); color: var(--red); }
-    .chip.blue { background: var(--blue-soft); color: var(--blue); }
-    .chip.amber { background: var(--amber-soft); color: var(--amber); }
-    .summary { display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; padding: 14px 0; border-block: 1px solid var(--line); margin-bottom: 18px; }
-    .summary b { font-size: 14px; }
-    .summary span { color: var(--muted); font-size: 13px; }
-    .notice { padding: 11px 13px; border-radius: 10px; margin-bottom: 14px; font-size: 13px; }
-    .notice.good { color: var(--green); background: var(--green-soft); }
-    .notice.bad { color: var(--red); background: var(--red-soft); }
-    .notice.info { color: var(--blue); background: var(--blue-soft); }
-    .stack { display: grid; gap: 10px; }
-    .row {
-      background: var(--paper);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      padding: 16px;
-    }
-    .row-top { display: grid; grid-template-columns: 1fr auto; gap: 18px; align-items: start; }
-    .row-title { font-weight: 780; font-size: 15px; }
-    .row-copy { color: var(--muted); font-size: 13px; margin: 5px 0 0; max-width: 66ch; }
-    .amount { font-size: 15px; font-weight: 850; white-space: nowrap; font-variant-numeric: tabular-nums; }
-    .row-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 13px; }
-    .btn { border: 1px solid var(--line); background: white; color: var(--ink); border-radius: 9px; padding: 8px 11px; font-size: 13px; font-weight: 730; }
-    .btn:hover { border-color: #9fa9a4; }
-    .btn.primary { color: white; background: var(--green); border-color: var(--green); }
-    .btn.quiet { background: transparent; border-color: transparent; color: var(--muted); padding-inline: 4px; }
-    .btn.danger { color: var(--red); border-color: #dcb6b1; }
-    details.why { margin-top: 13px; border-top: 1px solid var(--line); padding-top: 11px; }
-    details.why summary { color: var(--muted); font-size: 12px; font-weight: 750; cursor: pointer; list-style: none; }
-    details.why summary::-webkit-details-marker { display: none; }
-    details.why summary::after { content: " +"; }
-    details.why[open] summary::after { content: " −"; }
-    .proof { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
-    .proof div { min-width: 0; }
-    .proof b { display: block; color: var(--muted); margin-bottom: 3px; font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
-    .proof span { font-size: 12px; }
-    .deductions { margin-top: 14px; }
-    .deductions > summary { display: flex; justify-content: space-between; gap: 18px; padding: 13px 0; border-block: 1px solid var(--line); cursor: pointer; font-weight: 760; list-style: none; }
-    .deductions > summary::-webkit-details-marker { display: none; }
-    .deduction-list { padding: 12px 0 2px; display: grid; gap: 8px; }
-    .deduction { display: grid; grid-template-columns: 1fr auto; gap: 18px; color: var(--muted); font-size: 13px; }
-    .deduction b { color: var(--ink); }
-    .evidence-update { padding: 15px 16px; margin-bottom: 16px; border: 1px solid #9abaaa; border-radius: var(--radius); background: #f5fbf7; }
-    .evidence-update h2 { color: var(--green); }
-    .diffline { display: grid; grid-template-columns: 1fr auto 1fr; gap: 10px; align-items: center; margin-top: 11px; font-size: 13px; }
-    .diffline > div { padding: 10px; border-radius: 9px; background: white; border: 1px solid var(--line); }
-    .diffline .new { border-color: #9abaaa; }
-    .letter-link { display: flex; justify-content: space-between; width: 100%; margin-top: 16px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 13px; }
-    .empty { text-align: center; padding: 70px 20px; color: var(--muted); }
-    .empty h2 { color: var(--ink); font-size: 23px; }
-
-    /* Variant B: one decision at a time. */
-    .focus-shell { width: min(670px, 100%); margin: 0 auto; }
-    .focus-count { color: var(--muted); font-size: 12px; margin-bottom: 8px; }
-    .focus-card { background: var(--paper); border-radius: 18px; padding: clamp(22px, 5vw, 38px); box-shadow: 0 18px 45px rgba(21,32,28,.09); }
-    .focus-card .row-title { font-size: clamp(23px, 4vw, 32px); letter-spacing: -.03em; line-height: 1.15; }
-    .focus-card .amount { font-size: 20px; margin-top: 20px; }
-    .focus-card .proof { grid-template-columns: 1fr; border-top: 1px solid var(--line); padding-top: 14px; }
-    .queue { margin-top: 14px; border-top: 1px solid var(--line); }
-    .queue-item { display: grid; grid-template-columns: 1fr auto; gap: 16px; padding: 12px 0; border-bottom: 1px solid var(--line); font-size: 13px; }
-    .queue-item span { color: var(--muted); }
-
-    /* Variant C: evidence ledger. */
-    .ledger { border-block: 1px solid var(--line); }
-    .ledger-row { display: grid; grid-template-columns: 170px 1fr 150px; gap: 20px; padding: 16px 0; border-bottom: 1px solid var(--line); align-items: start; }
-    .ledger-row:last-child { border: 0; }
-    .ledger-source { color: var(--muted); font-size: 12px; }
-    .ledger-result { text-align: right; }
-    .ledger-result .amount { display: block; margin-bottom: 6px; }
-
-    .prototype-panel { margin-top: 26px; }
-    .prototype-panel > summary { color: var(--muted); font-size: 12px; cursor: pointer; }
-    .controls { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 12px; }
-    .state-line { width: 100%; color: var(--muted); font-size: 11px; margin-top: 4px; }
-    .switcher {
-      position: fixed;
-      z-index: 20;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
+    button { font: inherit; cursor: pointer; }
+    button:focus-visible, [tabindex]:focus-visible { outline: 3px solid #8ebabb; outline-offset: 2px; }
+    .shell { min-height: 100vh; }
+    .topbar {
+      height: 64px;
       display: grid;
-      grid-template-columns: 38px minmax(150px, auto) 38px;
+      grid-template-columns: 220px 1fr auto;
       align-items: center;
-      padding: 5px;
-      border-radius: 999px;
-      background: #14231e;
-      color: white;
-      box-shadow: 0 12px 30px rgba(0,0,0,.2);
+      padding: 0 34px;
+      color: #fff;
+      background: var(--nav);
+      border-bottom: 1px solid rgba(255,255,255,.08);
     }
-    .switcher button { width: 36px; height: 36px; border: 0; border-radius: 50%; background: transparent; color: white; font-size: 18px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-size: 13px; font-weight: 800; letter-spacing: .11em; }
+    .mark { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid #77a4a3; border-radius: 6px; color: #a9ccca; font-size: 12px; letter-spacing: 0; }
+    .nav { display: flex; align-items: center; gap: 28px; height: 100%; }
+    .nav a { height: 100%; display: flex; align-items: center; color: #aab6bd; text-decoration: none; font-size: 13px; }
+    .nav a.active { color: #fff; box-shadow: inset 0 -2px #80b8b5; }
+    .user { display: flex; align-items: center; gap: 10px; color: #dce3e6; font-size: 13px; }
+    .avatar { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 50%; background: #28404e; font-size: 11px; font-weight: 800; }
+    .page { width: min(1320px, calc(100% - 64px)); margin: 0 auto; padding: 34px 0 120px; }
+    .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+    h1, h2, h3, p { margin-top: 0; }
+    h1 { margin-bottom: 7px; font-size: 28px; line-height: 1.15; letter-spacing: -.025em; }
+    h2 { margin-bottom: 5px; font-size: 18px; line-height: 1.25; letter-spacing: -.015em; }
+    h3 { margin-bottom: 4px; font-size: 14px; }
+    .muted { margin: 0; color: var(--muted); }
+    .small { font-size: 12px; }
+    .steps { display: flex; align-items: center; gap: 9px; color: var(--muted); font-size: 12px; }
+    .step-dot { width: 24px; height: 24px; display: grid; place-items: center; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--paper); font-weight: 750; }
+    .step-dot.on { color: #fff; border-color: var(--accent); background: var(--accent); }
+    .step-dot.done { color: var(--success); border-color: #94b8a8; background: var(--success-soft); }
+    .step-rule { width: 28px; height: 1px; background: var(--line-strong); }
+    .surface { overflow: hidden; border: 1px solid var(--line); border-radius: 12px; background: var(--paper); box-shadow: 0 8px 28px rgba(20,33,43,.045); }
+    .toolbar { height: 52px; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 0 18px; border-bottom: 1px solid var(--line); background: #fafbfb; }
+    .toolbar strong { font-size: 13px; }
+    .search { width: 260px; height: 34px; display: flex; align-items: center; padding: 0 11px; border: 1px solid var(--line); border-radius: 7px; color: #84919a; background: #fff; font-size: 12px; }
+    table { width: 100%; border-collapse: collapse; text-align: left; }
+    th { height: 42px; padding: 0 18px; color: var(--muted); background: #fafbfb; border-bottom: 1px solid var(--line); font-size: 11px; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
+    td { height: 68px; padding: 0 18px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: 0; }
+    tbody tr:hover { background: #f8faf9; }
+    .case-name { font-weight: 750; }
+    .case-id { margin-top: 2px; color: var(--muted); font-size: 12px; }
+    .status { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 12px; font-weight: 700; }
+    .status::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .status.warn { color: var(--warn); }
+    .status.review { color: var(--review); }
+    .status.good { color: var(--success); }
+    .btn { min-height: 36px; padding: 8px 13px; border: 1px solid var(--line-strong); border-radius: 7px; color: var(--ink); background: #fff; font-size: 13px; font-weight: 720; }
+    .btn:hover { border-color: #9eabb2; background: #f8fafb; }
+    .btn.primary { color: #fff; border-color: var(--accent); background: var(--accent); }
+    .btn.primary:hover { border-color: var(--accent-hover); background: var(--accent-hover); }
+    .btn.link { min-height: auto; padding: 0; border: 0; color: var(--accent); background: transparent; }
+    .btn.link:hover { color: var(--accent-hover); background: transparent; text-decoration: underline; }
+    .btn[disabled] { cursor: not-allowed; opacity: .48; }
+    .intake { display: grid; grid-template-columns: minmax(0, 1fr) 330px; }
+    .intake-main { padding: 28px 30px 30px; }
+    .intake-side { padding: 28px 24px; border-left: 1px solid var(--line); background: #fafbfb; }
+    .case-strip { display: flex; align-items: center; gap: 18px; padding-bottom: 22px; margin-bottom: 24px; border-bottom: 1px solid var(--line); }
+    .case-strip .patient { margin-right: auto; }
+    .fact { min-width: 130px; }
+    .fact span { display: block; color: var(--muted); font-size: 11px; }
+    .fact b { display: block; margin-top: 3px; font-size: 13px; }
+    .policy { display: grid; grid-template-columns: 20px 1fr auto; gap: 12px; align-items: start; padding: 15px 16px; margin: 13px 0 24px; border: 1px solid #9ebbbb; border-radius: 9px; background: #f3f8f7; }
+    .check { width: 18px; height: 18px; display: grid; place-items: center; border-radius: 50%; color: #fff; background: var(--accent); font-size: 11px; font-weight: 900; }
+    .verified { color: var(--accent); font-size: 11px; font-weight: 750; }
+    .uploads { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .upload { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid var(--line); border-radius: 9px; }
+    .file-icon { width: 34px; height: 38px; display: grid; place-items: center; border-radius: 6px; color: var(--accent); background: var(--accent-soft); font-size: 10px; font-weight: 850; }
+    .file-name { font-size: 13px; font-weight: 720; }
+    .ready { color: var(--success); font-size: 11px; font-weight: 700; }
+    .primary-block { width: 100%; min-height: 42px; margin-top: 18px; }
+    .side-list { margin: 18px 0 0; padding: 0; list-style: none; }
+    .side-list li { display: flex; justify-content: space-between; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .side-list li:last-child { border-bottom: 0; }
+    .workspace { display: grid; grid-template-columns: minmax(0, 1fr) 310px; min-height: 600px; }
+    .work-main { min-width: 0; }
+    .casebar { height: 70px; display: flex; align-items: center; gap: 18px; padding: 0 24px; border-bottom: 1px solid var(--line); }
+    .casebar .patient { margin-right: auto; }
+    .policy-inline { color: var(--accent); font-size: 12px; font-weight: 720; }
+    .risk-line { display: grid; grid-template-columns: 34px minmax(0, 1fr) 130px; gap: 16px; padding: 22px 24px; border-bottom: 1px solid var(--line); }
+    .risk-line:last-child { border-bottom: 0; }
+    .risk-symbol { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 7px; font-size: 12px; font-weight: 850; }
+    .risk-symbol.warn { color: var(--warn); background: var(--warn-soft); }
+    .risk-symbol.review { color: var(--review); background: var(--review-soft); }
+    .risk-title { display: flex; align-items: center; gap: 9px; margin-bottom: 5px; font-weight: 780; }
+    .risk-copy { max-width: 74ch; margin: 0; color: var(--ink-2); font-size: 13px; }
+    .risk-value { text-align: right; font-size: 15px; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .risk-value span { display: block; margin-top: 4px; color: var(--muted); font-size: 11px; font-weight: 650; }
+    .evidence-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 16px; padding: 15px; border-radius: 8px; background: #f6f8f8; }
+    .evidence-grid b { display: block; margin-bottom: 4px; color: var(--muted); font-size: 10px; letter-spacing: .035em; text-transform: uppercase; }
+    .evidence-grid span { display: block; color: var(--ink-2); font-size: 12px; }
+    .required { margin-top: 12px; color: var(--ink); font-size: 12px; font-weight: 720; }
+    .work-side { padding: 22px; border-left: 1px solid var(--line); background: #fafbfb; }
+    .side-section { padding-bottom: 20px; margin-bottom: 20px; border-bottom: 1px solid var(--line); }
+    .side-section:last-child { border: 0; margin: 0; padding: 0; }
+    .deduction-total { margin-top: 10px; font-size: 24px; font-weight: 790; letter-spacing: -.02em; }
+    .deduction-row { display: flex; justify-content: space-between; gap: 12px; margin-top: 9px; color: var(--muted); font-size: 12px; }
+    .deduction-row b { color: var(--ink-2); }
+    .languages { display: flex; gap: 5px; margin: 12px 0 13px; }
+    .lang { min-height: 30px; padding: 5px 9px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink-2); background: #fff; font-size: 11px; font-weight: 700; }
+    .lang.active { color: #fff; border-color: var(--accent); background: var(--accent); }
+    .ask-copy { margin: 0; color: var(--ink-2); font-size: 13px; line-height: 1.55; }
+    .upload-corrected { width: 100%; min-height: 42px; margin-top: 18px; }
+    .secondary-link { width: 100%; display: flex; justify-content: space-between; margin-top: 14px; padding: 11px 0 0; border: 0; border-top: 1px solid var(--line); color: var(--muted); background: transparent; font-size: 11px; }
+    .secondary-link:hover { color: var(--ink); }
+    .compare { padding: 28px 30px 30px; }
+    .complete-banner { display: flex; align-items: center; gap: 15px; padding-bottom: 24px; border-bottom: 1px solid var(--line); }
+    .complete-icon { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 50%; color: var(--success); background: var(--success-soft); font-size: 18px; font-weight: 900; }
+    .version-head, .diff-row { display: grid; grid-template-columns: 180px 1fr 1fr 140px; gap: 18px; align-items: center; }
+    .version-head { padding: 22px 0 11px; color: var(--muted); font-size: 11px; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+    .diff-row { min-height: 78px; padding: 14px 0; border-top: 1px solid var(--line); }
+    .diff-label { font-weight: 740; }
+    .old, .new { color: var(--ink-2); font-size: 12px; }
+    .new.fixed { color: var(--success); font-weight: 720; }
+    .outcome { text-align: right; }
+    .completion-note { display: flex; align-items: center; justify-content: space-between; gap: 18px; padding: 16px 18px; margin-top: 22px; border-radius: 8px; color: #e6f0ef; background: var(--nav); }
+    .completion-note b { display: block; color: #fff; }
+    .completion-note span { display: block; margin-top: 2px; color: #afbdc5; font-size: 12px; }
+    .notice { padding: 10px 13px; margin: 0 24px 16px; border-radius: 7px; color: var(--danger); background: var(--danger-soft); font-size: 12px; }
+    .variant-b .workspace { grid-template-columns: 280px minmax(0, 1fr); }
+    .variant-b .work-side { grid-column: 1; grid-row: 1; border: 0; border-right: 1px solid var(--line); }
+    .variant-b .work-main { grid-column: 2; }
+    .variant-c .workspace { display: block; }
+    .variant-c .work-side { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 26px; border: 0; border-top: 1px solid var(--line); }
+    .variant-c .side-section { padding: 0; margin: 0; border: 0; }
+    .prototype-panel { margin-top: 18px; color: var(--muted); font-size: 11px; }
+    .prototype-panel summary { cursor: pointer; }
+    .prototype-controls { display: flex; flex-wrap: wrap; gap: 7px; padding-top: 10px; }
+    .switcher { position: fixed; z-index: 10; left: 50%; bottom: 18px; transform: translateX(-50%); display: grid; grid-template-columns: 36px minmax(180px, auto) 36px; align-items: center; padding: 4px; border-radius: 9px; color: #fff; background: #0f1a21; box-shadow: var(--shadow); }
+    .switcher button { width: 34px; height: 34px; border: 0; border-radius: 6px; color: #fff; background: transparent; }
     .switcher button:hover { background: rgba(255,255,255,.1); }
-    .variant-name { padding: 0 12px; text-align: center; font-size: 12px; font-weight: 760; white-space: nowrap; }
-    dialog { width: min(640px, calc(100% - 28px)); border: 0; border-radius: 16px; padding: 0; box-shadow: 0 30px 80px rgba(0,0,0,.28); }
-    dialog::backdrop { background: rgba(12,22,18,.58); }
-    .dialog-head { padding: 18px 20px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; align-items: start; gap: 20px; }
-    .dialog-body { padding: 20px; }
-    .close { border: 0; background: transparent; color: var(--muted); font-size: 22px; }
-    .languages { display: flex; gap: 6px; margin-bottom: 16px; }
-    .ask { padding: 20px; background: var(--wash); border-radius: 12px; font-size: clamp(21px, 4vw, 28px); font-weight: 700; line-height: 1.48; }
-    .letter { border: 1px solid #bbb; background: white; padding: 24px; font-family: Georgia, serif; }
-    .simulation { display: inline-block; border: 2px solid var(--red); color: var(--red); padding: 5px 8px; margin-bottom: 15px; font-family: ui-sans-serif, system-ui; font-size: 11px; font-weight: 850; }
-    @media (max-width: 700px) {
-      .prototype { display: none; }
-      .case-head { display: block; }
-      .case-head > .chip { margin-top: 14px; }
-      .proof, .ledger-row { grid-template-columns: 1fr; }
-      .ledger-result { text-align: left; }
-      .diffline { grid-template-columns: 1fr; }
-      .diffline > span { text-align: center; transform: rotate(90deg); }
-      .switcher { bottom: 12px; }
+    .variant-name { padding: 0 12px; text-align: center; font-size: 11px; font-weight: 700; }
+    dialog { width: 660px; padding: 0; border: 0; border-radius: 12px; box-shadow: 0 26px 70px rgba(10,20,27,.28); }
+    dialog::backdrop { background: rgba(10,20,27,.58); }
+    .dialog-head { display: flex; align-items: start; justify-content: space-between; gap: 20px; padding: 20px 22px; border-bottom: 1px solid var(--line); }
+    .dialog-body { padding: 22px; }
+    .close { border: 0; color: var(--muted); background: transparent; font-size: 20px; }
+    .letter { padding: 25px; border: 1px solid var(--line-strong); font-family: Georgia, serif; }
+    .simulation { display: inline-block; margin-bottom: 15px; padding: 5px 8px; border: 1px solid var(--danger); color: var(--danger); font-family: Aptos, "Segoe UI", sans-serif; font-size: 10px; font-weight: 850; letter-spacing: .04em; }
+    @media (max-width: 1100px) {
+      .nav { gap: 18px; }
+      .page { width: calc(100% - 40px); }
+      .evidence-grid { grid-template-columns: 1fr; gap: 10px; }
     }
   </style>
 </head>
 <body>
-  <header class="appbar">
-    <div class="brand">POSTDATED</div>
-    <div class="session"><span class="prototype">Prototype · issue #6</span><span class="avatar">AR</span><span>Ananya Rao</span></div>
-  </header>
-  <main id="app"></main>
-
+  <!--
+  THESIS: A desktop insurance-desk workbench that turns evidence into one next action; it refuses mobile cards and dashboard decoration.
+  OWN-WORLD: Restrained ink, stone, and surgical teal; compact tables, ruled evidence, squared controls, and one calm surface.
+  STORY: Ananya opens one case, analyses its verified policy and documents, then uploads corrected evidence and finishes her desk work.
+  FIRST VIEWPORT: A conventional web-app bar above a wide work queue; the current case expands into a split evidence workspace with one primary action.
+  FORM: Desktop operations register, expressed as three structurally different variants on ?variant=A|B|C.
+  FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
+  -->
+  <div class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="mark">P</span>POSTDATED</div>
+      <nav class="nav" aria-label="Primary navigation"><a class="active" href="#">Cases</a><a href="#">Policies</a><a href="#">Review queue</a></nav>
+      <div class="user"><span>Ananya Rao</span><span class="avatar">AR</span></div>
+    </header>
+    <main id="app"></main>
+  </div>
   <nav class="switcher" aria-label="Prototype variants">
-    <button id="prev-variant" aria-label="Previous variant">←</button>
-    <div class="variant-name" id="variant-name"></div>
-    <button id="next-variant" aria-label="Next variant">→</button>
+    <button id="prev-variant" aria-label="Previous variant">←</button><div class="variant-name" id="variant-name"></div><button id="next-variant" aria-label="Next variant">→</button>
   </nav>
-
-  <dialog id="ask-dialog" aria-labelledby="ask-heading">
-    <div class="dialog-head"><div><h2 id="ask-heading">Ask sheet</h2><p class="sub">Show this to the nursing station.</p></div><button class="close" data-close="ask-dialog" aria-label="Close ask sheet">×</button></div>
-    <div class="dialog-body" id="ask-body"></div>
-  </dialog>
   <dialog id="letter-dialog" aria-labelledby="letter-heading">
-    <div class="dialog-head"><div><h2 id="letter-heading">Simulated future letter</h2><p class="sub">Secondary explanation · not a claim decision.</p></div><button class="close" data-close="letter-dialog" aria-label="Close simulated letter">×</button></div>
+    <div class="dialog-head"><div><h2 id="letter-heading">Simulated future letter</h2><p class="muted small">Secondary view · not a claim decision</p></div><button class="close" data-close aria-label="Close">×</button></div>
     <div class="dialog-body" id="letter-body"></div>
   </dialog>
-
   <script>
-    // Three structurally different minimal variants on one route: ?variant=A|B|C.
-    const variants = {
-      A: 'A — Action queue',
-      B: 'B — One decision',
-      C: 'C — Evidence ledger'
-    };
-    const variantKeys = Object.keys(variants);
+    const variants = { A: 'A — Split workbench', B: 'B — Review rail', C: 'C — Evidence register' };
+    const keys = Object.keys(variants);
     let variant = new URLSearchParams(location.search).get('variant')?.toUpperCase();
-    if (!variantKeys.includes(variant)) variant = 'A';
+    if (!keys.includes(variant)) variant = 'A';
+    let state = { phase: 0, language: 'en', correction: null, message: '' };
 
-    const initial = () => ({
-      step: 4,
-      corrected: null,
-      reviewSent: false,
-      complete: false,
-      askLanguage: 'en',
-      lastChange: 'Work list created from the original discharge summary and bill.',
-      tone: 'info'
-    });
-    let state = initial();
-
-    const risk = {
-      title: 'Collect the indoor case papers',
-      amount: 84000,
-      why: 'The day-by-day ward record is missing, so the payer may treat four charge groups as unsupported.',
-      evidence: 'Original upload: discharge summary and final bill only. No ward record found.',
-      rule: 'Verified Niva Bupa claim-document rule: medical records must support claimed hospital charges.',
-      calculation: '₹12,000 nursing + ₹30,000 doctor fees + ₹14,000 theatre + ₹28,000 diagnostics = ₹84,000.',
-      asks: {
-        en: 'Please provide the signed indoor case papers — the day-by-day ward record — for this admission.',
-        kn: 'ದಯವಿಟ್ಟು ಈ ದಾಖಲಾತಿಗೆ ಸಹಿ ಮಾಡಿದ ದಿನನಿತ್ಯದ ವಾರ್ಡ್ ದಾಖಲೆಗಳನ್ನು (Indoor Case Papers) ನೀಡಿ.',
-        hi: 'कृपया इस भर्ती के हस्ताक्षर किए हुए रोज़ के वार्ड रिकॉर्ड (Indoor Case Papers) दें।'
-      }
-    };
-    const review = {
-      title: 'Reason for inpatient admission is unclear',
-      why: 'Only the treating doctor can answer. POSTDATED does not write or suggest the clinical reason.',
-      evidence: 'Original summary: “Post-operative period uneventful.” No reason for inpatient admission is stated.',
-      rule: 'Verified Niva Bupa ReAssure 2.0 §4.2.1 hospitalization conditions.',
-      calculation: 'No reliable rupee result. Needs human review.'
+    const asks = {
+      en: 'Please provide the signed indoor case papers — the day-by-day ward record — for this admission.',
+      kn: 'ದಯವಿಟ್ಟು ಈ ದಾಖಲಾತಿಗೆ ಸಹಿ ಮಾಡಿದ ದಿನನಿತ್ಯದ ವಾರ್ಡ್ ದಾಖಲೆಗಳನ್ನು (Indoor Case Papers) ನೀಡಿ.',
+      hi: 'कृपया इस भर्ती के हस्ताक्षर किए हुए रोज़ के वार्ड रिकॉर्ड (Indoor Case Papers) दें।'
     };
 
-    const derived = () => ({
-      analysed: state.step >= 4,
-      asked: state.step >= 5,
-      riskCleared: state.corrected === 'fixed',
-      reviewSent: state.reviewSent,
-      open: state.corrected === 'fixed' ? 0 : 1,
-      canComplete: state.corrected === 'fixed' && state.reviewSent && !state.complete,
-      version: state.corrected ? 2 : 1
-    });
+    const demoFiles = {
+      fixed: { name: 'indoor-case-papers-signed.pdf', evidence: ['signed ward record pages'] },
+      unchanged: { name: 'discharge-summary-revised.pdf', evidence: [] }
+    };
+
+    function compareUploadedEvidence(file) {
+      const hasRequiredPages = file.evidence.includes('signed ward record pages');
+      if (hasRequiredPages) return { ...state, phase: 3, correction: { file, result: 'fixed' }, message: '' };
+      return { ...state, phase: 2, correction: { file, result: 'unchanged' }, message: `${file.name} does not contain the required signed pages. The warning stays open.` };
+    }
 
     function dispatch(action) {
-      const d = derived();
-      const good = message => Object.assign(state, { lastChange: message, tone: 'good' });
-      const bad = message => Object.assign(state, { lastChange: message, tone: 'bad' });
-      switch (action) {
-        case 'reset': state = initial(); break;
-        case 'start': state = { ...initial(), step: -1, lastChange: 'Ready to open the case.', tone: 'info' }; break;
-        case 'next': advance(); return;
-        case 'ask':
-          if (!d.analysed) return bad('Create the work list first.'), render();
-          state.step = Math.max(state.step, 5); good('Ask sheet opened. No warning status changed.'); render(); openAsk(); return;
-        case 'fixed':
-          if (!d.analysed) return bad('Create the work list first.'), render();
-          state.step = Math.max(state.step, 6); state.corrected = 'fixed';
-          good('Evidence v2 adds the signed indoor case papers. The document warning cleared.'); break;
-        case 'unchanged':
-          if (!d.analysed) return bad('Create the work list first.'), render();
-          state.step = Math.max(state.step, 6); state.corrected = 'unchanged';
-          good('Evidence v2 contains no relevant change. The warning remains open.'); break;
-        case 'review':
-          if (state.corrected !== 'fixed') return bad('Upload the doctor-signed evidence before routing it for review.'), render();
-          state.step = Math.max(state.step, 7); state.reviewSent = true;
-          good('Sent to Priya Menon. It still says needs human review; it is not marked fixed.'); break;
-        case 'complete':
-          if (!d.canComplete) return bad('Cannot complete: collect the missing document and route uncertainty for human review.'), render();
-          state.step = 8; state.complete = true; good('Desk case complete. Human review remains visible and routed.'); break;
-      }
+      if (action === 'reset') state = { phase: 0, language: 'en', correction: null, message: '' };
+      if (action === 'open') state = { ...state, phase: 1, message: '' };
+      if (action === 'analyse') state = { ...state, phase: 2, message: '' };
+      if (action === 'correct') state = compareUploadedEvidence(demoFiles.fixed);
+      if (action === 'unchanged') state = compareUploadedEvidence(demoFiles.unchanged);
       render();
     }
 
-    function advance() {
-      const sequence = [
-        'Ananya opened case PD-4471.',
-        'Selected the verified Niva Bupa policy.',
-        'Uploaded the discharge summary.',
-        'Uploaded the itemised final bill.',
-        'Work list created from evidence v1.'
-      ];
-      if (state.step < 4) {
-        state.step += 1;
-        state.lastChange = sequence[state.step]; state.tone = 'good'; render(); return;
-      }
-      if (state.step === 4) return dispatch('ask');
-      if (!state.corrected) return dispatch('fixed');
-      if (!state.reviewSent) return dispatch('review');
-      return dispatch('complete');
+    function steps() {
+      return `<div class="steps" aria-label="Three-action journey">${[1,2,3].map((n, i) => `${i ? '<span class="step-rule"></span>' : ''}<span class="step-dot ${state.phase > n ? 'done' : state.phase === n ? 'on' : ''}">${state.phase > n ? '✓' : n}</span>`).join('')}<span>Three actions to finish desk work</span></div>`;
     }
 
-    function header(d) {
-      if (!d.analysed) return `<section class="empty"><h2>${stageTitle()}</h2><p>${state.lastChange}</p><button class="btn primary" data-action="next">${nextLabel()}</button></section>`;
-      return `<header class="case-head"><div><h1>Ramachandra P. · discharge today</h1><p class="sub">Case PD-4471 · Krishna Multispeciality Hospital</p><div class="meta"><span class="chip good">Niva Bupa · verified</span><span class="chip">Discharge summary</span><span class="chip">Itemised bill</span><span class="chip">Evidence v${d.version}</span></div></div>${state.complete ? '<span class="chip good">Desk case complete</span>' : '<span class="chip amber">40 minutes left</span>'}</header>`;
+    function queue() {
+      return `<div class="page"><div class="page-head"><div><h1>Cases</h1><p class="muted">Discharges that need attention today</p></div>${steps()}</div><section class="surface"><div class="toolbar"><strong>Hospital work list</strong><div class="search">Search patient or case ID</div></div><table><thead><tr><th>Patient</th><th>Insurer</th><th>Discharge</th><th>Status</th><th>Owner</th><th></th></tr></thead><tbody>
+      <tr><td><div class="case-name">Ramachandra P.</div><div class="case-id">PD-4471 · Krishna Multispeciality</div></td><td>Niva Bupa</td><td>Today · 4:30 PM</td><td><span class="status warn">Documents to review</span></td><td>Ananya Rao</td><td><button class="btn primary" data-action="open">Open case</button></td></tr>
+      <tr><td><div class="case-name">Meera S.</div><div class="case-id">PD-4468 · Krishna Multispeciality</div></td><td>HDFC ERGO</td><td>Tomorrow · 10:00 AM</td><td><span class="status review">Human review</span></td><td>Priya Menon</td><td><button class="btn" disabled>Assigned</button></td></tr>
+      <tr><td><div class="case-name">Joseph D.</div><div class="case-id">PD-4462 · Krishna Multispeciality</div></td><td>Care Health</td><td>Tomorrow · 2:00 PM</td><td><span class="status good">Ready</span></td><td>Ananya Rao</td><td><button class="btn" disabled>Complete</button></td></tr>
+      </tbody></table></section>${prototypeControls()}</div>`;
     }
 
-    function commonSummary(d) {
-      return `${state.lastChange ? `<div class="notice ${state.tone}" aria-live="polite">${esc(state.lastChange)}</div>` : ''}<div class="summary"><b>${d.open} document task${d.open === 1 ? '' : 's'}</b><span>1 needs human review</span><span>₹48,000 unavoidable</span></div>${state.corrected ? evidenceUpdate(d) : ''}`;
+    function intake() {
+      return `<div class="page"><div class="page-head"><div><button class="btn link" data-action="reset">← Back to cases</button><h1 style="margin-top:12px">Ramachandra P.</h1><p class="muted">Case PD-4471 · discharge today</p></div>${steps()}</div><section class="surface intake"><div class="intake-main"><div class="case-strip"><div class="patient"><h2>Prepare this case</h2><p class="muted small">The two hospital documents are ready to analyse.</p></div><div class="fact"><span>Hospital</span><b>Krishna Multispeciality</b></div><div class="fact"><span>Discharge</span><b>Today · 4:30 PM</b></div></div><h3>Policy</h3><div class="policy"><span class="check">✓</span><div><b>Niva Bupa ReAssure 2.0</b><p class="muted small" style="margin:3px 0 0">Policy NB-R2-8841 · validity checked against source document</p></div><span class="verified">Verified</span></div><h3>Documents</h3><div class="uploads"><div class="upload"><span class="file-icon">PDF</span><div><div class="file-name">Discharge summary</div><div class="muted small">8 pages · original</div></div><span class="ready">Ready</span></div><div class="upload"><span class="file-icon">PDF</span><div><div class="file-name">Itemised final bill</div><div class="muted small">12 pages · original</div></div><span class="ready">Ready</span></div></div><button class="btn primary primary-block" data-action="analyse">Use verified policy and analyse 2 documents</button></div><aside class="intake-side"><h3>What happens next</h3><p class="muted small">POSTDATED checks the uploaded evidence against the verified policy. It does not create clinical facts.</p><ul class="side-list"><li><span>Policy</span><b>Verified</b></li><li><span>Documents</span><b>2 ready</b></li><li><span>Clinical writing</span><b>Never generated</b></li></ul></aside></section>${prototypeControls()}</div>`;
     }
 
-    function variantA(d) {
-      return `${header(d)}${d.analysed ? `${commonSummary(d)}<section class="stack" aria-label="Work list">${documentRow(d)}${reviewRow(d)}</section>${deductions()}${letterLink()}${reviewControls(d)}` : ''}`;
+    function workSide() {
+      const langNames = { en: 'English', kn: 'ಕನ್ನಡ', hi: 'हिन्दी' };
+      return `<aside class="work-side"><section class="side-section"><h3>Unavoidable deductions</h3><p class="muted small">Shown separately. Desk action cannot change these.</p><div class="deduction-total">₹48,000</div><div class="deduction-row"><span>Room category</span><b>₹33,000</b></div><div class="deduction-row"><span>Consumables</span><b>₹15,000</b></div></section><section class="side-section"><h3>Ask sheet</h3><div class="languages">${Object.entries(langNames).map(([code, name]) => `<button class="lang ${state.language === code ? 'active' : ''}" data-lang="${code}">${name}</button>`).join('')}</div><p class="ask-copy" lang="${state.language}">${asks[state.language]}</p></section><section class="side-section"><button class="btn primary upload-corrected" data-action="correct">Upload corrected document</button><p class="muted small" style="margin:9px 0 0">Prototype file: indoor-case-papers-signed.pdf. POSTDATED compares its evidence before clearing anything.</p><button class="secondary-link" data-letter><span>Simulated future letter</span><span>Secondary view →</span></button></section></aside>`;
     }
 
-    function variantB(d) {
-      if (!d.analysed) return header(d);
-      const focus = d.riskCleared ? reviewFocus(d) : documentFocus(d);
-      return `${header(d)}<div class="focus-shell">${state.lastChange ? `<div class="notice ${state.tone}" aria-live="polite">${esc(state.lastChange)}</div>` : ''}<p class="focus-count">${d.riskCleared ? 'Next decision' : 'First of 2 decisions'}</p>${focus}<div class="queue"><div class="queue-item"><div><b>Policy deductions</b><br><span>No action can change these now</span></div><b>₹48,000</b></div>${d.riskCleared ? '<div class="queue-item"><div><b>Indoor case papers</b><br><span>Cleared by evidence v2</span></div><span class="chip good">Cleared</span></div>' : '<div class="queue-item"><div><b>Reason for admission</b><br><span>Needs human review</span></div><span class="chip blue">Review</span></div>'}</div>${letterLink()}${reviewControls(d)}</div>`;
+    function workbench() {
+      const className = variant === 'B' ? 'variant-b' : variant === 'C' ? 'variant-c' : '';
+      return `<div class="page ${className}"><div class="page-head"><div><button class="btn link" data-action="reset">← Cases</button><h1 style="margin-top:12px">Ramachandra P.</h1><p class="muted">Work list · evidence version 1</p></div>${steps()}</div><section class="surface workspace"><div class="work-main"><div class="casebar"><div class="patient"><b>Case PD-4471</b><p class="muted small">Discharge today · 40 minutes left</p></div><span class="policy-inline">Niva Bupa · verified</span></div>${state.message ? `<div class="notice">${state.message}</div>` : ''}
+      <article class="risk-line"><span class="risk-symbol warn">!</span><div><div class="risk-title">Collect the signed indoor case papers <span class="status warn">Action needed</span></div><p class="risk-copy">The day-by-day ward record is missing, so four charge groups may be unsupported.</p><div class="evidence-grid"><div><b>Document evidence</b><span>Discharge summary and final bill only. No ward record found.</span></div><div><b>Verified policy rule</b><span>Medical records must support claimed hospital charges.</span></div><div><b>Deterministic calculation</b><span>₹12,000 + ₹30,000 + ₹14,000 + ₹28,000 = ₹84,000</span></div></div><div class="required">Required: signed indoor case papers from the hospital.</div></div><div class="risk-value">₹84,000<span>preventable risk</span></div></article>
+      <article class="risk-line"><span class="risk-symbol review">?</span><div><div class="risk-title">Reason for inpatient admission is unclear <span class="status review">Needs human review</span></div><p class="risk-copy">Only the treating doctor can answer. POSTDATED does not write or suggest the clinical reason.</p><div class="evidence-grid"><div><b>Document evidence</b><span>The discharge summary does not state the reason for inpatient admission.</span></div><div><b>Verified policy rule</b><span>Niva Bupa ReAssure 2.0 §4.2.1 hospitalization conditions.</span></div><div><b>Calculation</b><span>No reliable rupee result. Needs human review.</span></div></div><div class="required">Doctor question: please state the clinical reason for inpatient admission.</div></div><div class="risk-value">Not calculated<span>routed to Priya Menon</span></div></article></div>${workSide()}</section>${prototypeControls()}</div>`;
     }
 
-    function variantC(d) {
-      if (!d.analysed) return header(d);
-      return `${header(d)}${commonSummary(d)}<section class="ledger" aria-label="Evidence ledger">
-        <article class="ledger-row"><div class="ledger-source"><b>Missing document</b><br>Discharge packet</div><div><h3>${risk.title}</h3><p class="sub">${risk.why}</p>${why(risk)}<div class="row-actions"><button class="btn" data-action="ask">Open ask sheet</button></div></div><div class="ledger-result"><span class="amount">₹84,000</span>${d.riskCleared ? '<span class="chip good">Cleared by v2</span>' : '<span class="chip red">Action needed</span>'}</div></article>
-        <article class="ledger-row"><div class="ledger-source"><b>Clinical evidence</b><br>Discharge summary</div><div><h3>${review.title}</h3><p class="sub">${review.why}</p>${why(review)}</div><div class="ledger-result"><span class="amount">Not calculated</span><span class="chip blue">${d.reviewSent ? 'Sent to Priya' : 'Needs review'}</span></div></article>
-        <article class="ledger-row"><div class="ledger-source"><b>Policy terms</b><br>Final bill</div><div><h3>Room and consumables</h3><p class="sub">Already incurred. No discharge-desk action can change them.</p></div><div class="ledger-result"><span class="amount">₹48,000</span><span class="chip">Unavoidable</span></div></article>
-      </section>${letterLink()}${reviewControls(d)}`;
+    function completed() {
+      return `<div class="page"><div class="page-head"><div><button class="btn link" data-action="reset">← Cases</button><h1 style="margin-top:12px">Ramachandra P.</h1><p class="muted">Corrected-document comparison</p></div>${steps()}</div><section class="surface compare"><div class="complete-banner"><span class="complete-icon">✓</span><div><h2>Desk case complete</h2><p class="muted">The document warning cleared after evidence comparison. Clinical review stays open.</p></div></div><div class="version-head"><span>Check</span><span>Original evidence · v1</span><span>Corrected evidence · v2</span><span style="text-align:right">Outcome</span></div><div class="diff-row"><div class="diff-label">Indoor case papers</div><div class="old">Not present</div><div class="new fixed">indoor-case-papers-signed.pdf: signed ward record pages found</div><div class="outcome"><span class="status good">Cleared after comparison</span></div></div><div class="diff-row"><div class="diff-label">Reason for admission</div><div class="old">Not stated</div><div class="new">No relevant change</div><div class="outcome"><span class="status review">Human review open</span></div></div><div class="completion-note"><div><b>Desk case completed by Ananya Rao</b><span>Clinical review remains open and assigned to Priya Menon. It was not marked fixed.</span></div><span class="status review">Review open</span></div><button class="secondary-link" data-letter><span>Simulated future letter</span><span>Secondary view →</span></button></section>${prototypeControls()}</div>`;
     }
 
-    function documentRow(d) {
-      return `<article class="row"><div class="row-top"><div><div class="row-title">${risk.title}</div><p class="row-copy">${risk.why}</p></div><div><div class="amount">₹84,000</div><span class="chip ${d.riskCleared ? 'good' : 'red'}">${d.riskCleared ? 'Cleared by v2' : 'Action needed'}</span></div></div><div class="row-actions"><button class="btn primary" data-action="ask">Open ask sheet</button></div>${why(risk)}</article>`;
-    }
-    function reviewRow(d) {
-      return `<article class="row"><div class="row-top"><div><div class="row-title">${review.title}</div><p class="row-copy">${review.why}</p></div><div><div class="amount">Not calculated</div><span class="chip blue">${d.reviewSent ? 'Sent to Priya' : 'Needs human review'}</span></div></div>${why(review)}</article>`;
-    }
-    function documentFocus(d) {
-      return `<article class="focus-card"><span class="chip red">Action needed</span><div class="row-title" style="margin-top:14px">${risk.title}</div><p class="row-copy">${risk.why}</p><div class="amount">₹84,000 at risk</div><div class="row-actions"><button class="btn primary" data-action="ask">Open ask sheet</button></div>${why(risk)}</article>`;
-    }
-    function reviewFocus(d) {
-      return `<article class="focus-card"><span class="chip blue">${d.reviewSent ? 'Sent to Priya · needs review' : 'Needs human review'}</span><div class="row-title" style="margin-top:14px">${review.title}</div><p class="row-copy">${review.why}</p><div class="amount">No rupee result</div>${why(review)}${!d.reviewSent ? '<div class="row-actions"><button class="btn primary" data-action="review">Send to Priya</button></div>' : d.canComplete ? '<div class="row-actions"><button class="btn primary" data-action="complete">Complete desk case</button></div>' : ''}</article>`;
-    }
-    function why(item) {
-      return `<details class="why"><summary>Why this appears</summary><div class="proof"><div><b>Evidence</b><span>${esc(item.evidence)}</span></div><div><b>Verified rule</b><span>${esc(item.rule)}</span></div><div><b>Calculation</b><span>${esc(item.calculation)}</span></div></div></details>`;
-    }
-    function deductions() {
-      return `<details class="deductions"><summary><span>Unavoidable policy deductions</span><span>₹48,000</span></summary><div class="deduction-list"><div class="deduction"><span><b>Room category</b> · room excess and proportionate deduction</span><b>₹33,000</b></div><div class="deduction"><span><b>Non-payable consumables</b> · gloves, PPE and syringes</span><b>₹15,000</b></div></div></details>`;
-    }
-    function evidenceUpdate(d) {
-      const fixed = state.corrected === 'fixed';
-      return `<section class="evidence-update"><h2>${fixed ? 'New evidence fixed one warning' : 'No evidence changed'}</h2><p class="sub">${fixed ? 'The signed indoor case papers are present. The doctor-signed answer still needs human review.' : 'The filename changed, but the required pages are still missing. Nothing cleared.'}</p><div class="diffline"><div>v1 · indoor papers absent</div><span>→</span><div class="new">v2 · ${fixed ? 'signed pages present' : 'still absent'}</div></div></section>`;
-    }
-    function letterLink() {
-      return `<button class="btn quiet letter-link" data-letter><span>Simulated future letter</span><span>Secondary view →</span></button>`;
-    }
-    function reviewControls(d) {
-      return `<details class="prototype-panel"><summary>Prototype controls</summary><div class="controls"><button class="btn" data-action="start">Restart full journey</button><button class="btn primary" data-action="next">${nextLabel()}</button><button class="btn" data-action="fixed">Upload corrected evidence</button><button class="btn" data-action="unchanged">Upload unchanged evidence</button><button class="btn" data-action="review">Send for human review</button><button class="btn" data-action="complete">Complete case</button><span class="state-line">State: step ${state.step} · evidence v${d.version} · ${d.open} open · review ${d.reviewSent ? 'routed' : 'not routed'} · ${state.complete ? 'complete' : 'in progress'}</span></div></details>`;
-    }
-    function stageTitle() { return ['Open case PD-4471', 'Choose the verified policy', 'Upload discharge summary', 'Upload itemised final bill', 'Create work list'][state.step + 1] || 'Create work list'; }
-    function nextLabel() {
-      if (state.step < 4) return stageTitle();
-      if (state.step === 4) return 'Open ask sheet';
-      if (!state.corrected) return 'Upload corrected evidence';
-      if (!state.reviewSent) return 'Send for human review';
-      if (!state.complete) return 'Complete case';
-      return 'Case complete';
+    function prototypeControls() {
+      return `<details class="prototype-panel"><summary>Prototype controls</summary><div class="prototype-controls"><button class="btn" data-action="reset">Start over</button><button class="btn" data-action="open">1 · Open case</button><button class="btn" data-action="analyse">2 · Analyse documents</button><button class="btn" data-action="correct">3 · Upload corrected document</button><button class="btn" data-action="unchanged">Test unchanged document</button></div></details>`;
     }
 
-    function openAsk() { renderAsk(); document.getElementById('ask-dialog').showModal(); }
-    function renderAsk() {
-      const names = { en: 'English', kn: 'ಕನ್ನಡ', hi: 'हिन्दी' };
-      const root = document.getElementById('ask-body');
-      root.innerHTML = `<div class="languages">${Object.entries(names).map(([code,name]) => `<button class="btn ${state.askLanguage === code ? 'primary' : ''}" data-lang="${code}">${name}</button>`).join('')}</div><div class="ask" lang="${state.askLanguage}">${risk.asks[state.askLanguage]}</div><p class="sub" style="margin-top:13px">Showing this sheet does not change the warning. Only new evidence can clear it.</p>`;
-      root.querySelectorAll('[data-lang]').forEach(button => button.addEventListener('click', () => { state.askLanguage = button.dataset.lang; renderAsk(); }));
+    function renderLetter() {
+      const exposure = state.phase === 3 ? 48000 : 132000;
+      document.getElementById('letter-body').innerHTML = `<div class="letter"><div class="simulation">SIMULATION · NOT ISSUED BY NIVA BUPA</div><h2>Possible future deductions</h2><p style="font-size:30px;color:var(--danger);font-weight:800">₹${exposure.toLocaleString('en-IN')}</p><p>This secondary view explains the current work list. It is not a real letter, promise, or claim outcome.</p></div>`;
     }
-    function renderLetter(d) {
-      const exposure = 48000 + (d.riskCleared ? 0 : 84000);
-      document.getElementById('letter-body').innerHTML = `<div class="letter"><div class="simulation">SIMULATION · NOT ISSUED BY NIVA BUPA</div><h2>Possible future deductions</h2><p style="font-size:28px;color:var(--red);font-weight:800">₹${exposure.toLocaleString('en-IN')}</p><p>This explains the current work list. It is not a real letter, promise, or calibrated claim outcome.</p></div>`;
-    }
+
     function render() {
-      const d = derived();
-      const content = variant === 'A' ? variantA(d) : variant === 'B' ? variantB(d) : variantC(d);
-      document.getElementById('app').innerHTML = content;
+      document.getElementById('app').innerHTML = state.phase === 0 ? queue() : state.phase === 1 ? intake() : state.phase === 2 ? workbench() : completed();
       document.getElementById('variant-name').textContent = variants[variant];
-      document.querySelectorAll('[data-action]').forEach(button => button.addEventListener('click', () => dispatch(button.dataset.action)));
-      document.querySelectorAll('[data-letter]').forEach(button => button.addEventListener('click', () => { renderLetter(d); document.getElementById('letter-dialog').showModal(); }));
+      document.querySelectorAll('[data-action]').forEach(el => el.addEventListener('click', () => dispatch(el.dataset.action)));
+      document.querySelectorAll('[data-lang]').forEach(el => el.addEventListener('click', () => { state.language = el.dataset.lang; render(); }));
+      document.querySelectorAll('[data-letter]').forEach(el => el.addEventListener('click', () => { renderLetter(); document.getElementById('letter-dialog').showModal(); }));
     }
-    function switchVariant(direction) {
-      const next = (variantKeys.indexOf(variant) + direction + variantKeys.length) % variantKeys.length;
-      variant = variantKeys[next];
-      const url = new URL(location.href); url.searchParams.set('variant', variant); history.replaceState({}, '', url);
-      render();
-    }
-    function esc(value) { return String(value).replace(/[&<>'"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', "'":'&#39;', '"':'&quot;' }[char])); }
 
+    function switchVariant(delta) {
+      variant = keys[(keys.indexOf(variant) + delta + keys.length) % keys.length];
+      const url = new URL(location.href); url.searchParams.set('variant', variant); history.replaceState({}, '', url); render();
+    }
     document.getElementById('prev-variant').addEventListener('click', () => switchVariant(-1));
     document.getElementById('next-variant').addEventListener('click', () => switchVariant(1));
-    document.addEventListener('keydown', event => {
-      if (['INPUT','TEXTAREA'].includes(document.activeElement.tagName) || document.activeElement.isContentEditable) return;
-      if (event.key === 'ArrowLeft') switchVariant(-1);
-      if (event.key === 'ArrowRight') switchVariant(1);
-    });
-    document.querySelectorAll('[data-close]').forEach(button => button.addEventListener('click', () => document.getElementById(button.dataset.close).close()));
-    document.querySelectorAll('dialog').forEach(dialog => dialog.addEventListener('click', event => { if (event.target === dialog) dialog.close(); }));
+    document.querySelector('[data-close]').addEventListener('click', () => document.getElementById('letter-dialog').close());
+    document.addEventListener('keydown', event => { if (event.key === 'ArrowLeft') switchVariant(-1); if (event.key === 'ArrowRight') switchVariant(1); });
     render();
   </script>
 </body>
