@@ -16,16 +16,19 @@ npm run eval
 ```
 
 That runs the guard and resolution checks, then skips live extraction with a clear message
-when `ANTHROPIC_API_KEY` is absent.
+when `CEREBRAS_API_KEY` is absent.
 
 To score the live route, start the app in another terminal and set the key:
 
 ```sh
 npm run dev
-ANTHROPIC_API_KEY=... npm run eval
+CEREBRAS_API_KEY=... npm run eval
 ```
 
 Set `POSTDATED_EVAL_URL` when the app is not at `http://localhost:3000`.
+
+The default `POSTDATED_EVAL_DELAY_MS=13000` spaces requests for Cerebras Free Trial's
+5 requests-per-minute limit. Set it lower only when the account has a higher limit.
 
 If `/api/extract` returns `source=fixture`, the case fails. The fixture is valid demo
 fallback behaviour, but it is not an extraction evaluation.

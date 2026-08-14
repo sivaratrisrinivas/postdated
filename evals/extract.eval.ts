@@ -97,14 +97,18 @@ export async function runExtractEval(
   packs: CasePack[] = loadCorpus(),
   baseUrl = process.env.POSTDATED_EVAL_URL ?? 'http://localhost:3000',
 ): Promise<ExtractReport> {
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.log('extract: SKIPPED — set ANTHROPIC_API_KEY and run the dev server to score live extraction');
+  if (!process.env.CEREBRAS_API_KEY) {
+    console.log('extract: SKIPPED — set CEREBRAS_API_KEY and run the dev server to score live extraction');
     return { status: 'skipped', rows: [], failures: [] };
   }
 
   const rows: ExtractRow[] = [];
   const failures: string[] = [];
+  const delayMs = Number(process.env.POSTDATED_EVAL_DELAY_MS ?? 13_000);
   for (const pack of packs) {
+    if (rows.length + failures.length > 0 && delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs));
+    }
     const started = Date.now();
     let response: Response;
     try {

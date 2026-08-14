@@ -79,7 +79,7 @@ flowchart TB
     end
 
     subgraph server["2 · On the server · the API key never leaves this box"]
-        C["Claude looks at<br/>the photograph"] --> D["Reports only what it sees:<br/>bill lines, exact quotes,<br/>missing documents,<br/>unanswered questions"]
+        C["Cerebras Gemma 4 31B<br/>looks at the photograph"] --> D["Reports only what it sees:<br/>bill lines, exact quotes,<br/>missing documents,<br/>unanswered questions"]
     end
 
     subgraph plain["3 · Ordinary code · no AI anywhere in here"]
@@ -108,7 +108,7 @@ flowchart TB
 
 Two things about that picture are the whole design.
 
-**The money is calculated by ordinary code, and we say so out loud.** Claude never
+**The money is calculated by ordinary code, and we say so out loud.** The vision model never
 touches a rupee. It reads a photograph and reports what it sees. Every subtraction,
 every ratio, every total is done by a plain function you can read in about five minutes,
 sitting next to the sentence of the insurance contract it implements. If the arithmetic
@@ -142,9 +142,9 @@ add a fever, it refuses and shows you that exact sentence as the reason.
 
 The refusal is not an error page. It is something to demonstrate on purpose.
 
-## Why Claude, specifically
+## Why a vision model, specifically
 
-Take Claude out and there is no product left — not a worse one, none.
+Take the vision model out and there is no product left — not a worse one, none.
 
 - **A discharge summary is a piece of paper.** There is no data feed for it, and there
   never will be. It is nine-point type, three pages, handwriting in the margins,
@@ -178,7 +178,7 @@ Take Claude out and there is no product left — not a worse one, none.
   that *do* get paid — which is the far more common thing, and which nobody escalates
   because it is not worth eighteen months of complaint procedure.
 - **The published rulings run 2004 to 2014.** Nothing after about 2016 is available.
-- **This is Claude reasoning like a claims reviewer. It is not trained on real
+- **This is Cerebras Gemma 4 31B reasoning like a claims reviewer. It is not trained on real
   accept/reject decisions**, because the insurers hold those and will not share them. We
   do not know how often it wrongly says a claim is fine. That number is unmeasured and we
   say so before anyone asks.
@@ -209,7 +209,7 @@ purpose to make the consumer half work properly in the time available. See
 | `lib/deduct.ts` | Every calculation. 24 tests |
 | `lib/guard.ts` | The check that stops the system inventing medical facts. 14 tests |
 | `lib/policy.ts` | The policy, as read by hand from the wording |
-| `app/api/extract/route.ts` | The one place Claude is called. The key stays server-side |
+| `app/api/extract/route.ts` | The one place Cerebras is called. The key stays server-side |
 
 ## Trying it in one minute, without installing anything
 
@@ -247,8 +247,8 @@ photograph. Lay it on a table and use the camera for real.
 
 ## Running it on your own machine
 
-**You need:** Node.js 20 or newer, and — optionally — an Anthropic API key from
-[console.anthropic.com](https://console.anthropic.com). Without a key it still runs; it
+**You need:** Node.js 20 or newer, and — optionally — a Cerebras API key from
+[cloud.cerebras.ai](https://cloud.cerebras.ai). Without a key it still runs; it
 just shows the saved example instead of reading your photo.
 
 ```sh
@@ -260,7 +260,7 @@ cd postdated
 npm install
 
 # 3 — add your key, if you have one
-echo 'ANTHROPIC_API_KEY=sk-ant-...' > .env.local
+echo 'CEREBRAS_API_KEY=...' > .env.local
 
 # 4 — start it
 npm run dev

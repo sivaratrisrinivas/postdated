@@ -1,4 +1,3 @@
-import Anthropic from '@anthropic-ai/sdk';
 import { NextResponse } from 'next/server';
 import { SEEDED_EXTRACTION } from '@/lib/fixture';
 import type { Extraction } from '@/lib/types';
@@ -10,15 +9,9 @@ import type { Extraction } from '@/lib/types';
  * The API key stays on this side. It is never sent to the browser.
  */
 
-const MODEL = 'claude-opus-5';
-
-/**
- * Extraction is not intelligence-sensitive and the demo has a ~10s latency budget, so
- * this runs at low effort with thinking left on. If the venue makes that too slow, add
- * `thinking: { type: 'disabled' }` — legal on Opus 5 at effort `high` or below — and
- * re-measure. Don't raise effort; it buys nothing here.
- */
-const EFFORT = 'low' as const;
+// Cerebras' public preview exposes image inputs on this model.
+const MODEL = 'gemma-4-31b';
+const CEREBRAS_API_URL = 'https://api.cerebras.ai/v1/chat/completions';
 
 const HEADS = [
   'room_rent',
@@ -48,21 +41,17 @@ const EXTRACTION_SCHEMA = {
   properties: {
     clinical_statements: {
       type: 'array',
-      description:
-        'Verbatim spans copied from the photograph. Never paraphrase, never infer, ' +
-        'never add a finding the page does not contain.',
       items: { type: 'string' },
     },
     bill_lines: {
       type: 'array',
-      description: 'One entry per printed bill line. Amounts in whole rupees, as printed.',
       items: {
         type: 'object',
         additionalProperties: false,
         required: ['head', 'label', 'amount'],
         properties: {
           head: { type: 'string', enum: HEADS },
-          label: { type: 'string', description: 'The line as printed on the bill.' },
+          label: { type: 'string' },
           amount: { type: 'integer' },
         },
       },
@@ -79,29 +68,28 @@ const EXTRACTION_SCHEMA = {
     },
     missing_documents: {
       type: 'array',
-      description:
-        'Documents a payer will demand that this page does not contain and does not ' +
-        'attach — e.g. "Indoor case papers", "Itemised bill", "Implant invoice and sticker".',
       items: { type: 'string' },
     },
     unestablished: {
       type: 'array',
-      description:
-        'Phrase each as the thing the record fails to establish, so it can be turned ' +
-        'into a question for the treating doctor. Never write the missing sentence.',
       items: { type: 'string' },
     },
     ped_trigger_phrases: {
       type: 'array',
-      description:
-        'Verbatim phrases a payer typically quotes to argue pre-existing disease, ' +
-        'such as "k/c/o DM since 15 years". Copy exactly. Do not judge whether the ' +
-        'argument would succeed.',
       items: { type: 'string' },
     },
     confidence: { type: 'string', enum: ['high', 'medium', 'low'] },
   },
 } as const;
+
+type CerebrasResponse = {
+  choices?: Array<{
+    message?: {
+      content?: string | null;
+    };
+  }>;
+  usage?: Record<string, number>;
+};
 
 const SYSTEM = `You read a photographed Indian hospital discharge summary and final bill, and you return structured data about what is on the page.
 
@@ -126,65 +114,75 @@ export async function POST(request: Request) {
     if (!image) {
       return NextResponse.json({ error: 'no image' }, { status: 400 });
     }
-    if (!process.env.ANTHROPIC_API_KEY) {
+    if (!process.env.CEREBRAS_API_KEY) {
       // Fall back to the committed fixture rather than fail the demo.
       return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_no_key' });
     }
 
-    const client = new Anthropic();
     const started = Date.now();
 
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 16_000,
-      system: SYSTEM,
-      output_config: {
-        effort: EFFORT,
-        format: { type: 'json_schema', schema: EXTRACTION_SCHEMA },
+    const response = await fetch(CEREBRAS_API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.CEREBRAS_API_KEY}`,
+        'Content-Type': 'application/json',
       },
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: media_type ?? 'image/jpeg',
-                data: image,
+      body: JSON.stringify({
+        model: MODEL,
+        max_completion_tokens: 4_096,
+        temperature: 0,
+        messages: [
+          { role: 'system', content: SYSTEM },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text:
+                  'This is the discharge summary and final bill handed over at the counter. ' +
+                  'Extract it. Report what a TPA will find missing.',
               },
-            },
-            {
-              type: 'text',
-              text:
-                'This is the discharge summary and final bill handed over at the counter. ' +
-                'Extract it. Report what a TPA will find missing.',
-            },
-          ],
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${media_type ?? 'image/jpeg'};base64,${image}`,
+                },
+              },
+            ],
+          },
+        ],
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'postdated_extraction',
+            strict: true,
+            schema: EXTRACTION_SCHEMA,
+          },
         },
-      ],
+      }),
     });
 
-    if (response.stop_reason === 'refusal') {
-      return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_refusal' });
+    if (!response.ok) {
+      throw new Error(`Cerebras returned HTTP ${response.status}`);
     }
 
-    const text = response.content.find((b) => b.type === 'text');
-    if (!text || text.type !== 'text') {
+    const data = (await response.json()) as CerebrasResponse;
+    const text = data.choices?.[0]?.message?.content;
+    if (!text) {
       return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_no_text' });
     }
 
-    const extraction = JSON.parse(text.text) as Extraction;
+    const extraction = JSON.parse(text) as Extraction;
 
     return NextResponse.json({
       extraction,
       source: 'live',
       latency_ms: Date.now() - started,
-      usage: response.usage,
+      usage: data.usage,
     });
   } catch (error) {
     // The demo never dies on this path. §14: three pre-photographed cases, one keystroke.
-    console.error('extract failed', error);
+    console.error('extract failed', error instanceof Error ? error.message : 'unknown error');
     return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_error' });
   }
 }
