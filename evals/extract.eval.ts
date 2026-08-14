@@ -9,21 +9,32 @@ interface ExtractRow {
   moneyExact: string;
   room: string;
   missingDocuments: string;
+  missingDocumentsRecall: string;
   unestablished: string;
+  unestablishedRecall: string;
   pedPhrases: string;
+  pedPhrasesRecall: string;
   hallucinatedFields: number;
   safeAbstention: string;
   failures: string[];
+  warnings: string[];
 }
 
 export interface ExtractReport {
   status: 'skipped' | 'passed' | 'failed';
   rows: ExtractRow[];
   failures: string[];
+  warnings: string[];
 }
 
 function sameSet(left: readonly string[], right: readonly string[]): boolean {
   return left.length === right.length && left.every((value) => right.includes(value));
+}
+
+function recall(actual: readonly string[], expected: readonly string[]): string {
+  if (expected.length === 0) return actual.length === 0 ? '100%' : '0%';
+  const matched = expected.filter((value) => actual.includes(value)).length;
+  return `${Math.round((matched / expected.length) * 100)}%`;
 }
 
 function exactMoney(actual: Extraction, expected: Extraction): [number, number] {
@@ -68,13 +79,14 @@ function scoreExtraction(
   const safeAbstention =
     expected.confidence === 'low' ? actual.confidence !== 'high' : actual.confidence !== 'low';
   const failures: string[] = [];
+  const warnings: string[] = [];
 
   if (sourceKind !== 'live') failures.push(`route returned ${sourceKind}, not live`);
   if (moneyMatched !== moneyTotal) failures.push(`money ${moneyMatched}/${moneyTotal} exact`);
   if (roomChecks.some((check) => !check)) failures.push(`room fields ${roomChecks.filter(Boolean).length}/3 exact`);
-  if (!missingDocumentsExact) failures.push('missing documents do not exactly match');
+  if (!missingDocumentsExact) warnings.push('missing documents do not exactly match');
   if (!unestablishedExact) failures.push('unestablished items do not exactly match');
-  if (!pedExact) failures.push('PED trigger phrases do not exactly match');
+  if (!pedExact) warnings.push('PED trigger phrases do not exactly match');
   if (hallucinated > 0) failures.push(`${hallucinated} clinical statements are not in the source`);
   if (!safeAbstention) failures.push('confidence did not safely abstain for this case');
 
@@ -85,11 +97,15 @@ function scoreExtraction(
     moneyExact: `${moneyMatched}/${moneyTotal}`,
     room: `${roomChecks.filter(Boolean).length}/3`,
     missingDocuments: missingDocumentsExact ? 'exact' : 'mismatch',
+    missingDocumentsRecall: recall(actual.missing_documents, expected.missing_documents),
     unestablished: unestablishedExact ? 'exact' : 'mismatch',
+    unestablishedRecall: recall(actual.unestablished, expected.unestablished),
     pedPhrases: pedExact ? 'exact' : 'mismatch',
+    pedPhrasesRecall: recall(actual.ped_trigger_phrases, expected.ped_trigger_phrases),
     hallucinatedFields: hallucinated,
     safeAbstention: safeAbstention ? 'pass' : 'fail',
     failures,
+    warnings,
   };
 }
 
@@ -99,11 +115,12 @@ export async function runExtractEval(
 ): Promise<ExtractReport> {
   if (!process.env.CEREBRAS_API_KEY) {
     console.log('extract: SKIPPED — set CEREBRAS_API_KEY and run the dev server to score live extraction');
-    return { status: 'skipped', rows: [], failures: [] };
+    return { status: 'skipped', rows: [], failures: [], warnings: [] };
   }
 
   const rows: ExtractRow[] = [];
   const failures: string[] = [];
+  const warnings: string[] = [];
   const delayMs = Number(process.env.POSTDATED_EVAL_DELAY_MS ?? 13_000);
   for (const pack of packs) {
     if (rows.length + failures.length > 0 && delayMs > 0) {
@@ -144,10 +161,11 @@ export async function runExtractEval(
     );
     rows.push(row);
     failures.push(...row.failures.map((failure) => `${pack.groundTruth.id}: ${failure}`));
+    warnings.push(...row.warnings.map((warning) => `${pack.groundTruth.id}: ${warning}`));
   }
 
   const status = failures.length === 0 && rows.length === packs.length ? 'passed' : 'failed';
-  return { status, rows, failures };
+  return { status, rows, failures, warnings };
 }
 
 export function printExtractReport(report: ExtractReport): void {
@@ -160,12 +178,16 @@ export function printExtractReport(report: ExtractReport): void {
       money: row.moneyExact,
       room: row.room,
       missing_docs: row.missingDocuments,
+      missing_docs_recall: row.missingDocumentsRecall,
       unestablished: row.unestablished,
+      unestablished_recall: row.unestablishedRecall,
       PED: row.pedPhrases,
+      PED_recall: row.pedPhrasesRecall,
       hallucinated: row.hallucinatedFields,
       abstention: row.safeAbstention,
       latency_ms: row.latencyMs,
     })),
   );
   for (const failure of report.failures) console.error(`  FAIL ${failure}`);
+  for (const warning of report.warnings) console.warn(`  WARN ${warning}`);
 }

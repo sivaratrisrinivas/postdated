@@ -9,6 +9,10 @@ POSTDATED is a hackathon demo for the hospital discharge counter. It reads a pho
 - questions the doctor may need to answer;
 - a simple forecast of the money at risk.
 
+The web journey is intentionally three screens: capture the paperwork, read the future letter,
+and take one concrete document-or-doctor action. The letter remains the hero artefact; safety
+details stay available without competing with the next move.
+
 The forecast uses ordinary code. The model only reads the photograph. It must not invent a diagnosis, symptom, or reason for treatment. A separate check blocks unsupported medical wording.
 
 ## Try the demo
@@ -20,6 +24,9 @@ The sample is fictional. The letter is a forecast, not a real insurance decision
 ## Run it locally
 
 You need Node.js 20 or newer.
+
+If you use WSL, run the commands from the WSL shell so `node`, `npm`, and a key loaded from
+`~/.bashrc` stay in the same environment. Do not mix the WSL Node runtime with Windows `npm`.
 
 ```sh
 npm install
@@ -53,10 +60,13 @@ npm run eval
 ```
 
 The live run needs `CEREBRAS_API_KEY`. The default pace is slow enough for Cerebras Free Trial limits.
+It reports money, room, safety, and fallback failures as release-gate errors; wording differences in
+document/PED asks remain visible as diagnostic warnings. The live run also reports latency per case.
 
 ## Where to look
 
-- [`app/page.tsx`](./app/page.tsx) — the phone-sized demo.
+- [`app/page.tsx`](./app/page.tsx) — the responsive three-screen demo.
+- [`public/brand/postdated-mark.png`](./public/brand/postdated-mark.png) — the generated brand mark.
 - [`app/api/extract/route.ts`](./app/api/extract/route.ts) — the image-reading request.
 - [`lib/deduct.ts`](./lib/deduct.ts) — every money calculation.
 - [`lib/guard.ts`](./lib/guard.ts) — the check against invented medical facts.

@@ -103,7 +103,9 @@ Hard rules, in order of importance:
 4. You do no arithmetic. Report bill amounts exactly as printed. Do not total them, do not compute a deduction, do not estimate what will be disallowed. Skip any printed TOTAL, SUBTOTAL or NET PAYABLE row — those are sums, not charges.
 5. If the photograph is unreadable in part, say so via confidence and omit the field. A confident wrong number is worse than a gap.
 
-Be selective, not exhaustive. A discharge summary can be queried in twenty ways; a family standing at a counter with forty minutes can act on two or three. Return **at most three** missing_documents and **at most three** unestablished items, most consequential first — judged by how much money rides on each and whether it can still be obtained today.
+Be selective, not exhaustive. A discharge summary can be queried in twenty ways; a family standing at a counter with forty minutes can act on two or three. Return **at most three** missing_documents and **at most three** unestablished items, most consequential first — judged by how much money rides on each and whether it can still be obtained today. If the page has an explicit list such as "Missing at discharge", treat every listed item as evidence: copy each item faithfully and do not omit a secondary document just because a more common gap appears first. If the list says the bill is not fully itemised, preserve that as a request for the fully itemised bill.
+
+For ped_trigger_phrases, copy the exact visible phrase when the page records a pre-existing condition or history that could trigger a pre-existing-disease review (for example, "k/c/o DM since 15 years"). Do not translate, expand, or infer it; omit it only when the phrase is not actually visible.
 
 Domain context for that judgement, from public Ombudsman awards: the single most common missing document in Indian health claims is the indoor case papers (the ward's day-by-day nursing and treatment record), and the single most consequential unwritten statement is why inpatient admission was required at all. Check for both before anything else. Report them only if this page genuinely lacks them.`;
 

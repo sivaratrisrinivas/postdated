@@ -3,20 +3,16 @@
 import { useState } from 'react';
 import { guard, type Verdict } from '@/lib/guard';
 
-/**
- * The refusal beat. §13, 2:10–2:40: a judge says "add that he had a fever" and the
- * system refuses on stage.
- *
- * §9: "Show the refusal. Do not describe it." So this is a real input wired to the
- * real guard — the same function the tests cover — not a scripted animation.
- */
-
 const JUDGE_SUGGESTIONS = [
   'Patient had a fever on admission',
   'Oral therapy failed, IV antibiotics required',
   'Findings consistent with sepsis',
 ] as const;
 
+/**
+ * A deliberately tucked-away demo of the non-negotiable boundary: the system refuses to add a
+ * clinical fact that is absent or negated in the photographed record.
+ */
 export function GuardPanel({ sourceText }: { sourceText: string }) {
   const [draft, setDraft] = useState('');
   const [verdict, setVerdict] = useState<Verdict | null>(null);
@@ -27,71 +23,54 @@ export function GuardPanel({ sourceText }: { sourceText: string }) {
   }
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <h2 className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.18em] text-white/45">
-        Fabrication guard
-      </h2>
-      <p className="mt-2 text-[0.84rem] leading-snug text-white/65">
-        Try to make it write a clinical fact the record does not contain.
-      </p>
+    <section className="support-panel">
+      <h2>Fabrication guard</h2>
+      <p>Try to make it write a clinical fact the record does not contain.</p>
 
       <textarea
         value={draft}
-        onChange={(e) => check(e.target.value)}
-        rows={2}
+        onChange={(event) => check(event.target.value)}
+        rows={3}
         placeholder="Add that the patient had a fever…"
-        className="mt-4 w-full resize-none rounded-xl border border-white/12 bg-black/40 px-3.5 py-3 text-[0.9rem] leading-snug text-white placeholder:text-white/25 focus:border-white/30 focus:outline-none"
+        aria-label="Test the fabrication guard"
       />
 
-      <div className="mt-2 flex flex-wrap gap-1.5">
-        {JUDGE_SUGGESTIONS.map((s) => (
+      <div className="support-suggestions">
+        {JUDGE_SUGGESTIONS.map((suggestion) => (
           <button
-            key={s}
+            key={suggestion}
             type="button"
-            onClick={() => check(s)}
-            className="rounded-full bg-white/8 px-2.5 py-1 font-mono text-[0.6rem] text-white/55 transition-colors hover:bg-white/14 hover:text-white/80"
+            className="support-suggestion"
+            onClick={() => check(suggestion)}
           >
-            {s}
+            {suggestion}
           </button>
         ))}
       </div>
 
       {verdict && (
         <div
-          className={`mt-4 rounded-xl border px-4 py-3.5 ${
-            verdict.allowed
-              ? 'border-[#3FA96B]/35 bg-[#3FA96B]/10'
-              : 'border-[#E5484D]/45 bg-[#E5484D]/12'
-          }`}
+          className={`support-verdict ${verdict.allowed ? 'is-allowed' : 'is-blocked'}`}
           aria-live="polite"
         >
           {verdict.allowed ? (
             <>
-              <p className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.14em] text-[#6FD79B]">
-                Permitted
-              </p>
-              <p className="mt-1.5 text-[0.84rem] leading-snug text-white/75">
-                {explainAllowed(verdict.reason)}
-              </p>
+              <p className="support-verdict-label">Permitted</p>
+              <p>{explainAllowed(verdict.reason)}</p>
             </>
           ) : (
             <>
-              <p className="font-mono text-[0.66rem] font-bold uppercase tracking-[0.14em] text-[#FF8A8D]">
-                Blocked
-              </p>
-              <ul className="mt-1.5 space-y-2">
+              <p className="support-verdict-label">Blocked</p>
+              <ul>
                 {verdict.blocked_terms.map((term) => {
                   const negation = verdict.negations[term];
                   return (
-                    <li key={term} className="text-[0.84rem] leading-snug text-white/85">
-                      <span className="font-mono font-bold text-[#FF8A8D]">{term}</span>{' '}
+                    <li key={term}>
+                      <strong>{term}</strong>{' '}
                       {negation ? (
                         <>
-                          appears in the record only to be ruled out, so it is not
-                          established:
-                          <span className="mt-1.5 block border-l-2 border-[#FF8A8D]/40 pl-2.5 font-mono text-[0.74rem] leading-snug text-white/60">
-                            &ldquo;{negation}&rdquo;
-                          </span>
+                          appears in the record only to be ruled out, so it is not established:
+                          <span className="negation">“{negation}”</span>
                         </>
                       ) : (
                         <>is nowhere in the record, so the system will not write it.</>
@@ -100,9 +79,7 @@ export function GuardPanel({ sourceText }: { sourceText: string }) {
                   );
                 })}
               </ul>
-              <p className="mt-3 rounded-lg bg-black/35 px-3 py-2.5 font-mono text-[0.72rem] leading-relaxed text-[#FFB3B5]">
-                {verdict.ask_the_doctor}
-              </p>
+              <p className="doctor-ask">{verdict.ask_the_doctor}</p>
             </>
           )}
         </div>

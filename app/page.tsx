@@ -1,5 +1,7 @@
 'use client';
 
+import Image from 'next/image';
+import Link from 'next/link';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { AskSheet } from '@/components/AskSheet';
 import { GuardPanel } from '@/components/GuardPanel';
@@ -11,8 +13,6 @@ import { NIVA_BUPA_REASSURE_2 } from '@/lib/policy';
 import type { Disallowance, Extraction } from '@/lib/types';
 
 type Status = 'idle' | 'reading' | 'ready';
-
-/** Where the extraction came from. Shown, not hidden — §11: seeding is smart, faking is not. */
 type Source = 'live' | 'fixture';
 
 export default function Page() {
@@ -29,6 +29,12 @@ export default function Page() {
     [extraction],
   );
 
+  const nextFix = useMemo(
+    () =>
+      forecast?.lines.find((line) => line.bucket === 'C' && !resolved.has(line.reason)) ?? null,
+    [forecast, resolved],
+  );
+
   const capture = useCallback(async (file: File) => {
     setStatus('reading');
     const started = Date.now();
@@ -43,13 +49,14 @@ export default function Page() {
       setExtraction(data.extraction);
       setSource(data.source === 'live' ? 'live' : 'fixture');
       setLatency(data.latency_ms ?? Date.now() - started);
-      setResolved(new Set());
     } catch {
-      // §14: the demo never dies on the capture path.
+      // §14 contingency: the demo never dies on the capture path.
       setExtraction(SEEDED_EXTRACTION);
       setSource('fixture');
-      setResolved(new Set());
+      setLatency(null);
     }
+    setResolved(new Set());
+    setActiveLine(null);
     setStatus('ready');
   }, []);
 
@@ -58,19 +65,27 @@ export default function Page() {
     setSource('fixture');
     setLatency(null);
     setResolved(new Set());
+    setActiveLine(null);
     setStatus('ready');
   }, []);
 
   const resolve = useCallback((reason: string) => {
     setResolved((prev) => new Set(prev).add(reason));
+    setActiveLine(null);
   }, []);
 
-  return (
-    <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-16 pt-8 sm:px-6">
-      <Masthead />
+  const openNextFix = useCallback(() => {
+    if (nextFix) setActiveLine(nextFix);
+  }, [nextFix]);
 
-      {status !== 'ready' && (
-        <Capture
+  const stage = activeLine ? 'action' : status === 'ready' ? 'forecast' : 'capture';
+
+  return (
+    <main className="site-shell">
+      <SiteNav stage={stage} />
+
+      {stage === 'capture' && (
+        <CaptureStage
           busy={status === 'reading'}
           onPick={() => fileInput.current?.click()}
           onSeeded={runSeeded}
@@ -83,65 +98,60 @@ export default function Page() {
         accept="image/*"
         capture="environment"
         className="hidden"
-        onChange={(e) => {
-          const file = e.target.files?.[0];
+        onChange={(event) => {
+          const file = event.target.files?.[0];
           if (file) void capture(file);
+          event.target.value = '';
         }}
       />
 
-      {forecast && extraction && (
-        <div className="mt-8 space-y-4">
-          <Provenance source={source} latency={latency} />
-
-          <Letter forecast={forecast} resolved={resolved} onTapLine={setActiveLine} />
-
-          <p className="px-1 text-[0.8rem] leading-relaxed text-white/50">
-            Tap any red line. The two green ones are still fixable — the doctor is in the
-            building for about forty more minutes.
-          </p>
-
-          {extraction.ped_trigger_phrases.length > 0 && (
-            <PedTrigger phrases={extraction.ped_trigger_phrases} />
-          )}
-
-          <Coverage />
-
-          <GuardPanel sourceText={SEEDED_SUMMARY_TEXT} />
-
-          <button
-            type="button"
-            onClick={() => fileInput.current?.click()}
-            className="w-full rounded-xl border border-white/12 py-3 font-mono text-[0.68rem] font-bold uppercase tracking-[0.14em] text-white/60 transition-colors hover:border-white/25 hover:text-white/90"
-          >
-            Re-photograph the amended summary
-          </button>
-        </div>
+      {stage === 'forecast' && forecast && extraction && (
+        <ForecastStage
+          forecast={forecast}
+          extraction={extraction}
+          resolved={resolved}
+          source={source}
+          latency={latency}
+          nextFix={nextFix}
+          onOpenNextFix={openNextFix}
+          onPick={() => fileInput.current?.click()}
+        />
       )}
 
-      {activeLine && (
+      {stage === 'action' && activeLine && (
         <AskSheet line={activeLine} onResolve={resolve} onClose={() => setActiveLine(null)} />
       )}
     </main>
   );
 }
 
-function Masthead() {
+function SiteNav({ stage }: { stage: 'capture' | 'forecast' | 'action' }) {
   return (
-    <header>
-      <p className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.28em] text-[#E5484D]">
-        Postdated
-      </p>
-      <h1 className="mt-3 text-[1.6rem] font-semibold leading-[1.2] tracking-tight text-white sm:text-[1.9rem]">
-        We send you the insurance rejection letter three weeks before the insurer does.
-      </h1>
-      <p className="mt-3 text-[0.92rem] leading-relaxed text-white/55">
-        While the doctor is still in the building and the paperwork can still be fixed.
-      </p>
+    <header className="site-nav">
+      <Link className="brand-lockup" href="/" aria-label="POSTDATED home">
+        <Image
+          className="brand-mark"
+          src="/brand/postdated-mark.png"
+          alt=""
+          width={512}
+          height={512}
+          priority
+        />
+        <span className="brand-wordmark">POSTDATED</span>
+      </Link>
+
+      <nav className="nav-links" aria-label="Primary navigation">
+        <span className="nav-context">Hospital discharge counter</span>
+        <span className="nav-status">
+          <span className="status-dot" aria-hidden />
+          {stage === 'capture' ? 'Session ready' : 'Session private'}
+        </span>
+      </nav>
     </header>
   );
 }
 
-function Capture({
+function CaptureStage({
   busy,
   onPick,
   onSeeded,
@@ -151,129 +161,186 @@ function Capture({
   onSeeded: () => void;
 }) {
   return (
-    <div className="mt-8 space-y-3">
-      <button
-        type="button"
-        onClick={onPick}
-        disabled={busy}
-        className="w-full rounded-2xl bg-white px-5 py-5 text-left transition-transform active:scale-[0.99] disabled:opacity-60"
-      >
-        <span className="block font-mono text-[0.62rem] font-bold uppercase tracking-[0.16em] text-[#C1121F]">
-          {busy ? 'Reading the page…' : 'Step one'}
-        </span>
-        <span className="mt-1.5 block text-[1.05rem] font-semibold leading-snug text-[#1A1A1A]">
-          {busy
-            ? 'Extracting line items and missing documents'
-            : 'Photograph the discharge summary'}
-        </span>
-        <span className="mt-1 block text-[0.8rem] text-black/50">
-          Three pages, 9pt type, bad light. That is the input.
-        </span>
-      </button>
+    <section className="journey-stage" id="journey" aria-busy={busy}>
+      <div className="stage-copy">
+        <p className="step-count">01 / 03 · Start at the counter</p>
+        <h1 className="display-title">
+          Find the page that still has <em>time.</em>
+        </h1>
+        <p className="stage-lede">
+          Photograph the discharge summary and final bill. POSTDATED shows the insurance
+          deduction before the file leaves the hospital — while the doctor and ward records are
+          still close enough to ask.
+        </p>
 
-      {/* §14 contingency: one keystroke, no network. */}
-      <button
-        type="button"
-        onClick={onSeeded}
-        disabled={busy}
-        className="w-full rounded-xl border border-white/12 py-3 font-mono text-[0.66rem] font-bold uppercase tracking-[0.14em] text-white/50 transition-colors hover:border-white/25 hover:text-white/85 disabled:opacity-40"
-      >
-        Or run the seeded case
-      </button>
-    </div>
+        <div className="capture-actions">
+          <button type="button" className="primary-action" onClick={onPick} disabled={busy}>
+            {busy ? 'Reading the paperwork…' : 'Photograph the paperwork'}
+            {!busy && (
+              <svg className="action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                <path d="M2 8h11M8.5 3.5 13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            )}
+          </button>
+          <button type="button" className="text-action" onClick={onSeeded} disabled={busy}>
+            See a worked case instead
+          </button>
+        </div>
+
+        <p className="privacy-note">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
+            <path d="M7 1.25 11.25 3v3.27c0 2.58-1.68 4.92-4.25 5.73C4.43 11.2 2.75 8.85 2.75 6.27V3L7 1.25Z" stroke="currentColor" strokeWidth="1.1" />
+            <path d="m5.1 6.9 1.2 1.2 2.6-2.7" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Session-only by design. Your document is compressed for the read and is not retained.
+        </p>
+      </div>
+
+      <div className="counter-scene" aria-hidden="true">
+        <span className="scene-label">A claim, three weeks early</span>
+        <div className="scene-paper">
+          <p className="scene-paper-label">Claims adjudication</p>
+          <p className="scene-paper-date">Future letter · 26 days ahead</p>
+          <p className="scene-paper-amount">₹1,73,000</p>
+          <div className="scene-lines">
+            <span className="scene-line" />
+            <span className="scene-line" />
+            <span className="scene-line" />
+            <span className="scene-line" />
+          </div>
+        </div>
+        <p className="scene-caption">The only useful warning is one you can still act on.</p>
+      </div>
+    </section>
+  );
+}
+
+function ForecastStage({
+  forecast,
+  extraction,
+  resolved,
+  source,
+  latency,
+  nextFix,
+  onOpenNextFix,
+  onPick,
+}: {
+  forecast: ReturnType<typeof computeForecast>;
+  extraction: Extraction;
+  resolved: ReadonlySet<string>;
+  source: Source;
+  latency: number | null;
+  nextFix: Disallowance | null;
+  onOpenNextFix: () => void;
+  onPick: () => void;
+}) {
+  return (
+    <section className="reading-stage">
+      <div className="reading-intro">
+        <div>
+          <p className="step-count">02 / 03 · Read the future</p>
+          <h1 className="reading-title">Here is the letter, before it is real.</h1>
+        </div>
+        <p className="reading-intro-copy">
+          The big number is the part worth acting on. Start with the largest line marked{' '}
+          <strong>fixable now</strong>; the rest stays visible so the forecast stays honest.
+        </p>
+      </div>
+
+      <div className="forecast-layout">
+        <div className="letter-frame">
+          <Letter forecast={forecast} resolved={resolved} />
+        </div>
+
+        <aside className="forecast-side">
+          {nextFix ? (
+            <>
+              <p className="step-count">Your next move</p>
+              <p className="forecast-side-copy">
+                The highest-value line you can still address is <strong>{nextFix.reason}</strong>.
+                One physical ask. Then the letter can change.
+              </p>
+              <button type="button" className="primary-action primary-fix" onClick={onOpenNextFix}>
+                Open the fix
+                <svg className="action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M2 8h11M8.5 3.5 13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </>
+          ) : (
+            <p className="outcome-note">
+              <strong>There is no recoverable line in this read.</strong> The forecast is still
+              useful: it shows which deduction was already determined by the policy and bill.
+            </p>
+          )}
+
+          <Provenance source={source} latency={latency} />
+
+          <p className="side-note">
+            This is a forecast, not a letter issued by an insurer. Arithmetic is deterministic;
+            the photographed record is the source of every clinical phrase.
+          </p>
+
+          <details className="details-drawer">
+            <summary>Why this forecast is safe</summary>
+            <div className="details-content">
+              {extraction.ped_trigger_phrases.length > 0 && (
+                <PedTrigger phrases={extraction.ped_trigger_phrases} />
+              )}
+              <Coverage />
+              <GuardPanel sourceText={SEEDED_SUMMARY_TEXT} />
+            </div>
+          </details>
+
+          <button type="button" className="text-action" onClick={onPick}>
+            Scan an amended summary
+          </button>
+        </aside>
+      </div>
+    </section>
   );
 }
 
 function Provenance({ source, latency }: { source: Source; latency: number | null }) {
   return (
-    <div className="flex items-center gap-2 px-1 font-mono text-[0.6rem] uppercase tracking-[0.14em]">
-      <span
-        className={`inline-block h-1.5 w-1.5 rounded-full ${
-          source === 'live' ? 'bg-[#3FA96B]' : 'bg-[#E5A23F]'
-        }`}
-      />
-      <span className="text-white/45">
-        {source === 'live' ? 'Read live from the photograph' : 'Seeded case'}
-      </span>
-      {latency !== null && (
-        <span className="tabular-nums text-white/30">{(latency / 1000).toFixed(1)}s</span>
-      )}
-      <span className="ml-auto text-white/30">Arithmetic: deterministic</span>
+    <div className="provenance-line" aria-label="Forecast provenance">
+      <span className="status-dot" aria-hidden />
+      <span>{source === 'live' ? 'Read live from the photograph' : 'Seeded case'}</span>
+      {latency !== null && <span>{(latency / 1000).toFixed(1)}s</span>}
+      <span className="deterministic">Arithmetic · deterministic</span>
     </div>
   );
 }
 
-/**
- * The cheapest striking line the product can produce. It cannot adjudicate pre-existing
- * disease — nothing on a discharge summary can — but the phrase a payer will quote to
- * argue it is right there on the page, verbatim.
- */
 function PedTrigger({ phrases }: { phrases: string[] }) {
   return (
-    <section className="rounded-2xl border border-[#E5A23F]/25 bg-[#E5A23F]/[0.07] p-5">
-      <h2 className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.18em] text-[#E5A23F]">
-        The sentence they will use
-      </h2>
-      <p className="mt-2 text-[0.84rem] leading-snug text-white/65">
-        We cannot tell you whether they will reject this claim on pre-existing disease —
-        that needs the proposal form, which is not in this building. We can tell you the
-        exact sentence in your own paperwork they will quote to do it.
+    <section className="support-panel">
+      <h2>The sentence they may quote</h2>
+      <p>
+        We cannot adjudicate pre-existing disease from this paperwork. We can show the exact
+        phrase in the record a payer may quote to argue it.
       </p>
-      {phrases.map((p) => (
-        <p
-          key={p}
-          className="mt-3 rounded-lg bg-black/40 px-3.5 py-3 font-mono text-[0.86rem] text-[#FFD79B]"
-        >
-          &ldquo;{p}&rdquo;
+      {phrases.map((phrase) => (
+        <p key={phrase} className="doctor-ask">
+          “{phrase}”
         </p>
       ))}
     </section>
   );
 }
 
-/**
- * The honesty beat, revised. Volunteering the miss is the entire move — see
- * BUILD-TODAY.md, and docs/research/ombudsman-repudiation-grounds.md for the hand-read.
- */
 function Coverage() {
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-      <h2 className="font-mono text-[0.62rem] font-bold uppercase tracking-[0.18em] text-white/45">
-        What we can and cannot see
-      </h2>
-      <p className="mt-2 text-[0.84rem] leading-relaxed text-white/65">
-        We hand-read 40 public Insurance Ombudsman awards and found 24 repudiation
-        grounds. The three largest — pre-existing disease, non-disclosure at proposal,
-        and lapsed premium — account for 26 of those 40, and we cannot see a single one of
-        them. They need the proposal form, not the discharge summary.
+    <section className="support-panel">
+      <h2>What the read can and cannot see</h2>
+      <p>
+        The forecast covers deduction grounds visible in the discharge paperwork. It does not
+        infer proposal-form facts such as pre-existing disease, non-disclosure, or a lapsed
+        premium.
       </p>
-      <p className="mt-3 text-[0.84rem] leading-relaxed text-white/65">
-        So we do not forecast repudiation. Those claims are already lost and already
-        litigated. We forecast <strong className="font-semibold text-white/85">deduction</strong> —
-        the slice shaved off claims that do get paid. Of the grounds that produce those, we
-        see four fully and twelve partially.
-      </p>
-
-      <dl className="mt-4 grid grid-cols-3 gap-2 font-mono">
-        {[
-          { n: '4', label: 'seen fully', tone: 'text-[#6FD79B]' },
-          { n: '12', label: 'seen partly', tone: 'text-[#FFD79B]' },
-          { n: '8', label: 'not seen', tone: 'text-[#FF8A8D]' },
-        ].map((s) => (
-          <div key={s.label} className="rounded-lg bg-black/30 px-3 py-2.5">
-            <dt className={`text-xl font-bold tabular-nums ${s.tone}`}>{s.n}</dt>
-            <dd className="mt-0.5 text-[0.58rem] uppercase tracking-[0.1em] text-white/40">
-              {s.label}
-            </dd>
-          </div>
-        ))}
-      </dl>
-
-      <p className="mt-4 border-t border-white/8 pt-3 font-mono text-[0.62rem] leading-relaxed text-white/35">
-        Published awards run 2004–2014; nothing after ~2016 is available to read. The
-        forecast is Claude reasoning like a TPA medical officer, not a model calibrated on
-        real approve/deny pairs — those are held by the payers. Our false-green rate is
-        unmeasured, and we say so.
+      <p>
+        The hand-read public Ombudsman taxonomy contains 4 grounds seen fully, 12 partly, and 8
+        not visible from this document.
       </p>
     </section>
   );
