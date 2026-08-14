@@ -196,6 +196,23 @@ document. That side is described in the pitch and deliberately not built: it was
 purpose to make the consumer half work properly in the time available. See
 `BUILD-TODAY.md` for what was cut and why.
 
+## Current safety boundary
+
+This repository is currently a mock/demo and offline-evaluation build. The committed sample
+paperwork is fictional. The public path accepts only explicitly allowlisted `fake-demo`
+documents; an approved anonymised document requires an explicitly enabled provider, and a
+provider failure remains a visible failure rather than becoming the seeded case.
+
+The AWS path in `infra/pilot/` is a separate, disabled-by-default fake-challenge shell. It is
+not the hospital pilot and it does not authorize real patient-document processing. AWS/SAM
+tooling is not required to run the mock demo or its local tests.
+
+The full [issue #9 strict shadow-pilot specification](https://github.com/sivaratrisrinivas/postdated/issues/9)
+applies before any real upload: named accounts and MFA, consent and notice, approved provider
+and transfer terms, retention and deletion evidence, patient-free audit and stop controls,
+independent evaluation, and the hospital's contractual and operational approvals. Keep real
+uploads disabled until every applicable gate is evidenced for the exact deployed version.
+
 ## The files
 
 | Path | |

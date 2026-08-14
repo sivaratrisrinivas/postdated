@@ -193,4 +193,29 @@ describe('public fake-demo extraction boundary', () => {
     });
     expect(invoked).toBe(false);
   });
+
+  it('fails closed when an approved anonymised document provider fails', async () => {
+    const post = createPublicDemoPostHandler(
+      () => ({
+        liveEnabled: true,
+        providerApiKey: 'public-test-key',
+        approvedDocuments: new Map([
+          [
+            '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824',
+            { id: 'redacted-demo', kind: 'anonymised' },
+          ],
+        ]),
+      }),
+      () => ({
+        analyze: async () => {
+          throw new Error('provider unavailable');
+        },
+      }),
+    );
+
+    const response = await post(request({ ...BASE_REQUEST, mode: 'fake-demo' }));
+
+    expect(response.status).toBe(502);
+    expect(await json(response)).toEqual({ error: 'public demo analysis failed' });
+  });
 });

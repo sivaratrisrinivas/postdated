@@ -88,7 +88,7 @@ export function createPublicDemoPostHandler(
         latency_ms: Date.now() - started,
       });
     } catch {
-      return publicDemoResponse({ extraction: SEEDED_EXTRACTION, source: 'fixture_error' });
+      return publicDemoResponse({ error: 'public demo analysis failed' }, 502);
     }
   };
 }
