@@ -115,6 +115,20 @@ summary:focus-visible {
   font-size: 0.76rem;
 }
 
+.nav-new-check {
+  min-height: 2.4rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--coral) 55%, transparent);
+  color: var(--coral);
+  font-size: 0.74rem;
+  font-weight: 700;
+  transition: color 180ms ease, border-color 180ms ease;
+}
+
+.nav-new-check:hover {
+  border-color: var(--coral);
+  color: var(--ink);
+}
+
 .nav-link:hover {
   color: var(--ink);
 }
@@ -798,6 +812,49 @@ summary:focus-visible {
   color: var(--ink);
 }
 
+.completion-card {
+  border: 1px solid color-mix(in srgb, var(--forest) 28%, var(--line));
+  padding: 1.35rem;
+  background: color-mix(in srgb, var(--sage) 35%, var(--paper));
+}
+
+.completion-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: var(--forest);
+  color: var(--paper);
+}
+
+.completion-card .step-count {
+  margin-top: 1.15rem;
+}
+
+.completion-card h2 {
+  margin: 0.6rem 0 0;
+  color: var(--ink);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(1.65rem, 3vw, 2.3rem);
+  font-weight: 400;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+.completion-card p:not(.step-count) {
+  margin: 0.85rem 0 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.6;
+}
+
+.completion-card .primary-action {
+  width: 100%;
+  margin-top: 1.25rem;
+}
+
 .letter-paper {
   position: relative;
   overflow: hidden;
@@ -1140,6 +1197,11 @@ summary:focus-visible {
 
   .nav-links .nav-context {
     display: none;
+  }
+
+  .nav-new-check {
+    min-height: 2rem;
+    font-size: 0.65rem;
   }
 
   .nav-status {

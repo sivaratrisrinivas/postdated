@@ -21,6 +21,20 @@ Open [postdated.vercel.app](https://postdated.vercel.app), choose the sample dis
 
 The sample is fictional. The letter is a forecast, not a real insurance decision or medical advice.
 
+## First-time user flow
+
+1. On the opening screen, tap **Photograph the paperwork** and choose a clear photo of the discharge
+   summary and final bill. For a tour, choose **See a worked case instead**.
+2. Read the forecast letter. It shows the amount claimed, approved, and likely to be disallowed.
+   The largest line marked **Fixable now** is the next move.
+3. Tap **Open the fix**, choose a language if useful, and show the one document request or doctor
+   question to the right person at the hospital.
+4. Confirm **The ward handed it over** or **Doctor answered and signed**. After the last fixable line,
+   tap **Start a fresh check** to clear the session and begin with another file.
+
+The core journey is three screens: capture the paperwork, read the future letter, and take one
+concrete action. The app keeps documents session-only and does not write clinical facts.
+
 ## Run it locally
 
 You need Node.js 20 or newer.

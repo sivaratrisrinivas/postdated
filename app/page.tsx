@@ -78,11 +78,21 @@ export default function Page() {
     if (nextFix) setActiveLine(nextFix);
   }, [nextFix]);
 
+  const startFresh = useCallback(() => {
+    setStatus('idle');
+    setExtraction(null);
+    setSource('live');
+    setLatency(null);
+    setResolved(new Set());
+    setActiveLine(null);
+    if (fileInput.current) fileInput.current.value = '';
+  }, []);
+
   const stage = activeLine ? 'action' : status === 'ready' ? 'forecast' : 'capture';
 
   return (
     <main className="site-shell">
-      <SiteNav stage={stage} />
+      <SiteNav stage={stage} onStartFresh={startFresh} />
 
       {stage === 'capture' && (
         <CaptureStage
@@ -115,6 +125,7 @@ export default function Page() {
           nextFix={nextFix}
           onOpenNextFix={openNextFix}
           onPick={() => fileInput.current?.click()}
+          onStartFresh={startFresh}
         />
       )}
 
@@ -125,7 +136,13 @@ export default function Page() {
   );
 }
 
-function SiteNav({ stage }: { stage: 'capture' | 'forecast' | 'action' }) {
+function SiteNav({
+  stage,
+  onStartFresh,
+}: {
+  stage: 'capture' | 'forecast' | 'action';
+  onStartFresh: () => void;
+}) {
   return (
     <header className="site-nav">
       <Link className="brand-lockup" href="/" aria-label="POSTDATED home">
@@ -142,6 +159,11 @@ function SiteNav({ stage }: { stage: 'capture' | 'forecast' | 'action' }) {
 
       <nav className="nav-links" aria-label="Primary navigation">
         <span className="nav-context">Hospital discharge counter</span>
+        {stage !== 'capture' && (
+          <button type="button" className="nav-new-check" onClick={onStartFresh}>
+            New check
+          </button>
+        )}
         <span className="nav-status">
           <span className="status-dot" aria-hidden />
           {stage === 'capture' ? 'Session ready' : 'Session private'}
@@ -224,6 +246,7 @@ function ForecastStage({
   nextFix,
   onOpenNextFix,
   onPick,
+  onStartFresh,
 }: {
   forecast: ReturnType<typeof computeForecast>;
   extraction: Extraction;
@@ -233,6 +256,7 @@ function ForecastStage({
   nextFix: Disallowance | null;
   onOpenNextFix: () => void;
   onPick: () => void;
+  onStartFresh: () => void;
 }) {
   return (
     <section className="reading-stage">
@@ -268,10 +292,28 @@ function ForecastStage({
               </button>
             </>
           ) : (
-            <p className="outcome-note">
-              <strong>There is no recoverable line in this read.</strong> The forecast is still
-              useful: it shows which deduction was already determined by the policy and bill.
-            </p>
+            <div className="completion-card" role="status" aria-live="polite">
+              <span className="completion-mark" aria-hidden>
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path d="m3.5 9.2 3.2 3.2 7.3-7.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </span>
+              <p className="step-count">
+                {resolved.size > 0 ? '03 / 03 · Check complete' : 'Read complete'}
+              </p>
+              <h2>{resolved.size > 0 ? 'The fix is recorded.' : 'This read is complete.'}</h2>
+              <p>
+                {resolved.size > 0
+                  ? 'You have handled every recoverable line in this forecast. Start another check whenever a new file reaches the counter.'
+                  : 'There is no recoverable line to ask for in this read. You can begin with a different discharge file.'}
+              </p>
+              <button type="button" className="primary-action" onClick={onStartFresh}>
+                Start a fresh check
+                <svg className="action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+                  <path d="M2 8h11M8.5 3.5 13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            </div>
           )}
 
           <Provenance source={source} latency={latency} />
