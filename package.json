@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",
+    "eval": "node --experimental-strip-types evals/run.eval.ts",
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run"
