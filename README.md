@@ -269,10 +269,20 @@ npm run dev
 Then open **http://localhost:3000** and follow steps 3 to 7 above. The sample files are
 already in the repo at `public/samples/`, so you can pick them straight off disk.
 
+The public demonstration accepts only fake or fully anonymised documents. Its extraction
+route requires an explicit `fake-demo` mode and is separate from the protected pilot route.
+The protected route (`/api/pilot/analyze`) is disabled unless all dedicated pilot gates and
+credentials are configured; it accepts only authenticated `fake-challenge` submissions and
+an image digest is allowlisted, and it never falls back to the demo fixture. Do not enable
+those pilot settings in a public deployment. The protected deployment requires
+`POSTDATED_PILOT_ENABLED=true`, `POSTDATED_PILOT_PROVIDER_APPROVED=true`, dedicated
+`POSTDATED_PILOT_ACCESS_TOKEN` and `POSTDATED_PILOT_ANTHROPIC_API_KEY` values, plus
+`POSTDATED_PILOT_FAKE_CHALLENGES=fake-challenge-1=<sha256>` for each fake challenge image.
+
 Two other things worth running:
 
 ```sh
-npm test          # 38 tests. The money and the medical-word check are both covered
+npm test          # money, boundary, and medical-word checks
 npm run build     # what gets deployed
 ```
 

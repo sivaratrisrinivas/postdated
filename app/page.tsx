@@ -37,7 +37,7 @@ export default function Page() {
       const res = await fetch('/api/extract', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ image: base64, media_type }),
+        body: JSON.stringify({ image: base64, media_type, mode: 'fake-demo' }),
       });
       const data = await res.json();
       setExtraction(data.extraction);
@@ -178,6 +178,11 @@ function Capture({
       >
         Or run the seeded case
       </button>
+
+      <p className="rounded-xl border border-[#E5A23F]/20 bg-[#E5A23F]/[0.06] px-4 py-3 text-[0.74rem] leading-relaxed text-[#FFD79B]/80">
+        Public demonstration only: use fake or fully anonymised documents. Real patient
+        documents are not accepted here and cannot enter the protected pilot boundary.
+      </p>
     </div>
   );
 }
