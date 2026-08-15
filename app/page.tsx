@@ -12,8 +12,9 @@ import { SEEDED_EXTRACTION, SEEDED_SUMMARY_TEXT } from '@/lib/fixture';
 import { NIVA_BUPA_REASSURE_2 } from '@/lib/policy';
 import type { Disallowance, Extraction } from '@/lib/types';
 
-type Status = 'idle' | 'reading' | 'ready';
+type Status = 'idle' | 'reading' | 'ready' | 'complete';
 type Source = 'live' | 'fixture';
+type Stage = 'capture' | 'forecast' | 'action' | 'complete';
 
 export default function Page() {
   const [status, setStatus] = useState<Status>('idle');
@@ -70,9 +71,16 @@ export default function Page() {
   }, []);
 
   const resolve = useCallback((reason: string) => {
-    setResolved((prev) => new Set(prev).add(reason));
+    const nextResolved = new Set(resolved).add(reason);
+    setResolved(nextResolved);
     setActiveLine(null);
-  }, []);
+    if (
+      forecast &&
+      !forecast.lines.some((line) => line.bucket === 'C' && !nextResolved.has(line.reason))
+    ) {
+      setStatus('complete');
+    }
+  }, [forecast, resolved]);
 
   const openNextFix = useCallback(() => {
     if (nextFix) setActiveLine(nextFix);
@@ -88,7 +96,13 @@ export default function Page() {
     if (fileInput.current) fileInput.current.value = '';
   }, []);
 
-  const stage = activeLine ? 'action' : status === 'ready' ? 'forecast' : 'capture';
+  const stage: Stage = activeLine
+    ? 'action'
+    : status === 'complete'
+      ? 'complete'
+      : status === 'ready'
+        ? 'forecast'
+        : 'capture';
 
   return (
     <main className="site-shell">
@@ -129,6 +143,16 @@ export default function Page() {
         />
       )}
 
+      {stage === 'complete' && forecast && (
+        <CompletionStage
+          forecast={forecast}
+          resolved={resolved}
+          source={source}
+          latency={latency}
+          onStartFresh={startFresh}
+        />
+      )}
+
       {stage === 'action' && activeLine && (
         <AskSheet line={activeLine} onResolve={resolve} onClose={() => setActiveLine(null)} />
       )}
@@ -140,7 +164,7 @@ function SiteNav({
   stage,
   onStartFresh,
 }: {
-  stage: 'capture' | 'forecast' | 'action';
+  stage: Stage;
   onStartFresh: () => void;
 }) {
   return (
@@ -159,7 +183,7 @@ function SiteNav({
 
       <nav className="nav-links" aria-label="Primary navigation">
         <span className="nav-context">Hospital discharge counter</span>
-        {stage !== 'capture' && (
+        {(stage === 'forecast' || stage === 'action') && (
           <button type="button" className="nav-new-check" onClick={onStartFresh}>
             New check
           </button>
@@ -343,6 +367,66 @@ function ForecastStage({
   );
 }
 
+function CompletionStage({
+  forecast,
+  resolved,
+  source,
+  latency,
+  onStartFresh,
+}: {
+  forecast: ReturnType<typeof computeForecast>;
+  resolved: ReadonlySet<string>;
+  source: Source;
+  latency: number | null;
+  onStartFresh: () => void;
+}) {
+  const recovered = forecast.lines
+    .filter((line) => resolved.has(line.reason))
+    .reduce((sum, line) => sum + line.amount, 0);
+  const remaining = forecast.lines
+    .filter((line) => !resolved.has(line.reason))
+    .reduce((sum, line) => sum + line.amount, 0);
+
+  return (
+    <section className="completion-stage" aria-labelledby="completion-title">
+      <div className="completion-copy">
+        <p className="step-count">Final result · after your action</p>
+        <h1 id="completion-title" className="completion-title">
+          Now you can see what the letter carries.
+        </h1>
+        <p className="completion-lede">
+          Your document or doctor action is recorded for this check. The updated letter keeps only
+          the lines that still need a policy or bill decision.
+        </p>
+
+        <dl className="result-summary">
+          <div>
+            <dt>Recovered from this check</dt>
+            <dd className="result-recovered">{rupees(recovered)}</dd>
+          </div>
+          <div>
+            <dt>Still shown as disallowed</dt>
+            <dd>{rupees(remaining)}</dd>
+          </div>
+        </dl>
+
+        <button type="button" className="primary-action" onClick={onStartFresh}>
+          Start a fresh check
+          <svg className="action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+            <path d="M2 8h11M8.5 3.5 13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
+        <Provenance source={source} latency={latency} />
+      </div>
+
+      <div className="letter-frame completion-letter-frame">
+        <Letter forecast={forecast} resolved={resolved} />
+      </div>
+    </section>
+  );
+}
+
 function Provenance({ source, latency }: { source: Source; latency: number | null }) {
   return (
     <div className="provenance-line" aria-label="Forecast provenance">
@@ -352,6 +436,10 @@ function Provenance({ source, latency }: { source: Source; latency: number | nul
       <span className="deterministic">Arithmetic · deterministic</span>
     </div>
   );
+}
+
+function rupees(value: number): string {
+  return `₹${value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`;
 }
 
 function PedTrigger({ phrases }: { phrases: string[] }) {

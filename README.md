@@ -29,11 +29,14 @@ The sample is fictional. The letter is a forecast, not a real insurance decision
    The largest line marked **Fixable now** is the next move.
 3. Tap **Open the fix**, choose a language if useful, and show the one document request or doctor
    question to the right person at the hospital.
-4. Confirm **The ward handed it over** or **Doctor answered and signed**. After the last fixable line,
-   tap **Start a fresh check** to clear the session and begin with another file.
+4. Confirm **The ward handed it over** or **Doctor answered and signed**. If another fixable line
+   remains, the app returns to the next move; after the last one, it opens a separate **Final result**
+   screen showing the updated letter and the amount still at risk.
+5. Tap **Start a fresh check** on the final-result screen to clear the session and begin with another file.
 
-The core journey is three screens: capture the paperwork, read the future letter, and take one
-concrete action. The app keeps documents session-only and does not write clinical facts.
+The core journey is three primary steps: capture the paperwork, read the future letter, and take
+one concrete action. The updated result then appears on its own post-action screen. The app keeps
+documents session-only and does not write clinical facts.
 
 ## Run it locally
 

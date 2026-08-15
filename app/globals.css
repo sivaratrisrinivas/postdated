@@ -413,10 +413,86 @@ summary:focus-visible {
 }
 
 .reading-stage,
-.action-stage {
+.action-stage,
+.completion-stage {
   width: min(100% - 3rem, 90rem);
   margin: 0 auto;
   padding: 4rem 0 7rem;
+}
+
+.completion-stage {
+  display: grid;
+  grid-template-columns: minmax(17rem, 0.72fr) minmax(0, 1.28fr);
+  align-items: center;
+  gap: clamp(2rem, 7vw, 8rem);
+  min-height: calc(100vh - 5.5rem);
+}
+
+.completion-copy {
+  max-width: 30rem;
+}
+
+.completion-title {
+  max-width: 10ch;
+  margin: 1rem 0 0;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(2.85rem, 5.5vw, 5.3rem);
+  font-weight: 400;
+  letter-spacing: -0.05em;
+  line-height: 0.95;
+}
+
+.completion-lede {
+  max-width: 28rem;
+  margin: 1.5rem 0 0;
+  color: var(--muted);
+  font-size: 0.96rem;
+  line-height: 1.65;
+}
+
+.result-summary {
+  display: grid;
+  gap: 0.9rem;
+  margin: 2rem 0 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 0;
+}
+
+.result-summary div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.result-summary dt {
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.61rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.result-summary dd {
+  margin: 0;
+  color: var(--ink);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.result-summary .result-recovered {
+  color: var(--forest);
+}
+
+.completion-copy > .primary-action {
+  min-width: min(100%, 18rem);
+  margin-top: 1.7rem;
+}
+
+.completion-letter-frame {
+  width: 100%;
 }
 
 .reading-intro,
@@ -1144,7 +1220,8 @@ summary:focus-visible {
 @media (max-width: 900px) {
   .journey-stage,
   .forecast-layout,
-  .action-layout {
+  .action-layout,
+  .completion-stage {
     grid-template-columns: 1fr;
   }
 
@@ -1177,13 +1254,18 @@ summary:focus-visible {
   .action-layout {
     max-width: 48rem;
   }
+
+  .completion-stage {
+    min-height: auto;
+  }
 }
 
 @media (max-width: 640px) {
   .site-nav,
   .journey-stage,
   .reading-stage,
-  .action-stage {
+  .action-stage,
+  .completion-stage {
     width: min(100% - 2rem, 90rem);
   }
 
@@ -1299,6 +1381,19 @@ summary:focus-visible {
 
   .action-message {
     font-size: 1.3rem;
+  }
+
+  .completion-stage {
+    padding: 3rem 0 5rem;
+  }
+
+  .completion-title {
+    font-size: clamp(2.8rem, 13vw, 4.3rem);
+  }
+
+  .result-summary dt {
+    max-width: 11rem;
+    line-height: 1.35;
   }
 }
 
