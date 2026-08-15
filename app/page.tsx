@@ -37,7 +37,9 @@ export default function Page() {
   const [activeDemoCase, setActiveDemoCase] = useState<DemoCase | null>(null);
   const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const browseInput = useRef<HTMLInputElement>(null);
   const policyInput = useRef<HTMLInputElement>(null);
+  const policyBrowseInput = useRef<HTMLInputElement>(null);
 
   const forecast = useMemo(
     () => (extraction && policy ? computeForecast(extraction, policy) : null),
@@ -194,6 +196,7 @@ export default function Page() {
     setActiveDemoCase(null);
     setError(null);
     if (fileInput.current) fileInput.current.value = '';
+    if (browseInput.current) browseInput.current.value = '';
   }, []);
 
   const stage: Stage = !policy
@@ -218,6 +221,7 @@ export default function Page() {
           error={error}
           onPickInsurer={loadPickedPolicy}
           onPickPhoto={() => policyInput.current?.click()}
+          onPickExisting={() => policyBrowseInput.current?.click()}
         />
       )}
 
@@ -225,7 +229,8 @@ export default function Page() {
         <CaptureStage
           busy={status === 'reading'}
           error={error}
-          onPick={() => fileInput.current?.click()}
+          onPickCamera={() => fileInput.current?.click()}
+          onPickExisting={() => browseInput.current?.click()}
           onDemoCase={runDemoCase}
         />
       )}
@@ -235,6 +240,18 @@ export default function Page() {
         type="file"
         accept="image/*"
         capture="environment"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void capture(file, status === 'rescan' ? 'rescan' : 'custom', activeDemoCase ?? undefined);
+          event.target.value = '';
+        }}
+      />
+
+      <input
+        ref={browseInput}
+        type="file"
+        accept="image/*"
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0];
@@ -256,6 +273,18 @@ export default function Page() {
         }}
       />
 
+      <input
+        ref={policyBrowseInput}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void loadPolicyPhoto(file);
+          event.target.value = '';
+        }}
+      />
+
       {stage === 'forecast' && displayForecast && extraction && policy && (
         <ForecastStage
           forecast={displayForecast}
@@ -268,6 +297,7 @@ export default function Page() {
           onOpenNextFix={openNextFix}
           onOpenLine={setActiveLine}
           onPick={() => fileInput.current?.click()}
+          onChoose={() => browseInput.current?.click()}
           onStartFresh={startFresh}
         />
       )}
@@ -277,6 +307,7 @@ export default function Page() {
           busy={status === 'reading'}
           error={error}
           onPick={() => fileInput.current?.click()}
+          onChoose={() => browseInput.current?.click()}
           onDemoScan={() => {
             const line = resolvedLines[resolvedLines.length - 1];
             if (line) applyRescan(amendDemoExtraction(extraction, line), 'demo', null);
@@ -290,6 +321,7 @@ export default function Page() {
           busy={status === 'reading'}
           error={error}
           onPick={() => fileInput.current?.click()}
+          onChoose={() => browseInput.current?.click()}
           onBack={() => setStatus('ready')}
         />
       )}
@@ -326,11 +358,13 @@ function PolicyStage({
   error,
   onPickInsurer,
   onPickPhoto,
+  onPickExisting,
 }: {
   busy: boolean;
   error: string | null;
   onPickInsurer: () => void;
   onPickPhoto: () => void;
+  onPickExisting: () => void;
 }) {
   return (
     <section className="policy-stage" aria-busy={busy} aria-labelledby="policy-title">
@@ -360,6 +394,14 @@ function PolicyStage({
           <span>
             <strong>{busy ? 'Reading the policy page…' : 'Photograph a policy page'}</strong>
             <small>Live policy extraction · requires the Cerebras key</small>
+          </span>
+          <span className="policy-choice-note">JPG / PNG</span>
+        </button>
+
+        <button type="button" className="policy-choice" onClick={onPickExisting} disabled={busy}>
+          <span>
+            <strong>Choose an existing policy photo</strong>
+            <small>Use a page already saved on this device</small>
           </span>
           <span className="policy-choice-note">JPG / PNG</span>
         </button>
@@ -415,12 +457,14 @@ function SiteNav({
 function CaptureStage({
   busy,
   error,
-  onPick,
+  onPickCamera,
+  onPickExisting,
   onDemoCase,
 }: {
   busy: boolean;
   error: string | null;
-  onPick: () => void;
+  onPickCamera: () => void;
+  onPickExisting: () => void;
   onDemoCase: (id: DemoCaseId) => void;
 }) {
   return (
@@ -437,19 +481,23 @@ function CaptureStage({
         </p>
 
         <div className="capture-actions">
-          <button type="button" className="primary-action" onClick={onPick} disabled={busy}>
-            {busy ? 'Reading the paperwork…' : 'Photograph or upload your paperwork'}
+          <button type="button" className="primary-action" onClick={onPickCamera} disabled={busy}>
+            {busy ? 'Reading the paperwork…' : 'Take a photo of the paperwork'}
             {!busy && (
               <svg className="action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
                 <path d="M2 8h11M8.5 3.5 13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
           </button>
+          <button type="button" className="text-action" onClick={onPickExisting} disabled={busy}>
+            Choose an existing photo
+          </button>
         </div>
 
         <p className="capture-explanation">
-          This is the real upload path for a new discharge summary and final bill. For a reliable
-          tour, run one of the three committed demo cases below.
+          Use the rear camera when the paper is at the counter, or choose a photo already on the
+          device. The live reader currently accepts one image at a time. For a reliable tour, run
+          one of the three committed demo cases below.
         </p>
 
         <div className="demo-case-area">
@@ -522,12 +570,14 @@ function RescanStage({
   busy,
   error,
   onPick,
+  onChoose,
   onDemoScan,
   onBack,
 }: {
   busy: boolean;
   error: string | null;
   onPick: () => void;
+  onChoose: () => void;
   onDemoScan?: () => void;
   onBack: () => void;
 }) {
@@ -552,6 +602,9 @@ function RescanStage({
               <path d="M2 8h11M8.5 3.5 13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           )}
+        </button>
+        <button type="button" className="text-action" onClick={onChoose} disabled={busy}>
+          Choose an amended photo
         </button>
         {onDemoScan && (
           <button type="button" className="text-action" onClick={onDemoScan} disabled={busy}>
@@ -581,6 +634,7 @@ function ForecastStage({
   onOpenNextFix,
   onOpenLine,
   onPick,
+  onChoose,
   onStartFresh,
 }: {
   forecast: ReturnType<typeof computeForecast>;
@@ -593,6 +647,7 @@ function ForecastStage({
   onOpenNextFix: () => void;
   onOpenLine: (line: Disallowance) => void;
   onPick: () => void;
+  onChoose: () => void;
   onStartFresh: () => void;
 }) {
   return (
@@ -673,6 +728,9 @@ function ForecastStage({
 
           <button type="button" className="text-action" onClick={onPick}>
             Scan an amended summary
+          </button>
+          <button type="button" className="text-action" onClick={onChoose}>
+            Choose an amended photo
           </button>
         </aside>
       </div>

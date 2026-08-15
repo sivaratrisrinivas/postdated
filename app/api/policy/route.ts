@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
+import type { ProcessTrace } from '@/lib/process';
 import type { BillHead } from '@/lib/types';
 import type { Policy } from '@/lib/policy';
+import { validateImagePayload } from '@/lib/upload-validation';
 
 const CEREBRAS_API_URL = 'https://api.cerebras.ai/v1/chat/completions';
 const MODEL = 'gemma-4-31b';
@@ -53,9 +55,11 @@ room category, eligible daily rate, the exact closed list of associated medical 
 and the verbatim clause plus its page or section reference.`;
 
 export async function POST(request: Request) {
+  const started = Date.now();
   try {
     const { image, media_type } = await request.json();
-    if (!image) return NextResponse.json({ error: 'no image' }, { status: 400 });
+    const imagePayload = validateImagePayload(image, media_type);
+    if (!imagePayload.ok) return NextResponse.json({ error: imagePayload.error }, { status: 400 });
 
     if (!process.env.CEREBRAS_API_KEY) {
       return NextResponse.json(
@@ -64,6 +68,8 @@ export async function POST(request: Request) {
       );
     }
 
+    const validatedAt = Date.now();
+    const modelStarted = Date.now();
     const response = await fetch(CEREBRAS_API_URL, {
       method: 'POST',
       headers: {
@@ -82,7 +88,7 @@ export async function POST(request: Request) {
               { type: 'text', text: 'Extract the policy schedule and room-rent clause from this page.' },
               {
                 type: 'image_url',
-                image_url: { url: `data:${media_type ?? 'image/jpeg'};base64,${image}` },
+                image_url: { url: `data:${imagePayload.mediaType};base64,${image}` },
               },
             ],
           },
@@ -93,6 +99,7 @@ export async function POST(request: Request) {
         },
       }),
     });
+    const modelFinishedAt = Date.now();
 
     if (!response.ok) throw new Error(`Cerebras returned HTTP ${response.status}`);
 
@@ -127,8 +134,19 @@ export async function POST(request: Request) {
       clause_verbatim: parsed.clause_verbatim,
       clause_ref: parsed.clause_ref,
     };
+    const finishedAt = Date.now();
+    const trace: ProcessTrace = {
+      tool_calls: 0,
+      model_calls: 1,
+      steps: [
+        { name: 'input_validation', latency_ms: validatedAt - started },
+        { name: 'model_call', latency_ms: modelFinishedAt - modelStarted },
+        { name: 'response_parse', latency_ms: finishedAt - modelFinishedAt },
+      ],
+      total_latency_ms: finishedAt - started,
+    };
 
-    return NextResponse.json({ policy, source: 'live' });
+    return NextResponse.json({ policy, source: 'live', latency_ms: finishedAt - started, trace });
   } catch (error) {
     console.error('policy extraction failed', error instanceof Error ? error.message : 'unknown error');
     return NextResponse.json(

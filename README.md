@@ -29,9 +29,10 @@ The sample is fictional. The letter is a forecast, not a real insurance decision
 
 1. On the policy screen, tap **Niva Bupa · ReAssure 2.0** for the pre-parsed demo policy. The
    **Photograph a policy page** path is available when `CEREBRAS_API_KEY` is configured.
-2. On the paperwork screen, either use **Photograph or upload your paperwork** for a real image,
-   or run one of the three committed demo cases: the original fixture, the public JPG, or the
-   print-ready public PDF case.
+2. On the paperwork screen, either use **Take a photo of the paperwork** for a new rear-camera
+   image or **Choose an existing photo** for a file already on the device. You can also run one of
+   the three committed demo cases: the original fixture, the public JPG, or the print-ready public
+   PDF case.
 3. Read the future letter. Every red line has an amount and a clause or exact missing statement;
    tap any line to inspect its evidence. The largest line marked **Fixable now** is the next move.
 4. Tap **Open the fix**, choose English, Kannada, or Hindi, and hold the physical document demand
@@ -56,8 +57,11 @@ that image is read live; without the key, custom uploads show a configuration er
 pretending that the seeded case came from the uploaded document.
 
 The current browser path accepts one image at a time (JPG, PNG, HEIC formats supported by the
-browser). The committed PDF is a preconfigured demo case; PDF vision upload and multi-page
-batching are not part of this demo build.
+browser). The camera and existing-file controls are intentionally separate because mobile
+browser support for the `capture` hint varies. The committed PDF is a preconfigured demo case;
+PDF vision upload and multi-page batching are not part of this demo build. See
+[`docs/research/upload-options.md`](./docs/research/upload-options.md) for the researched
+production options and the retention tradeoffs.
 
 ## Run it locally
 
@@ -99,7 +103,36 @@ npm run eval
 
 The live run needs `CEREBRAS_API_KEY`. The default pace is slow enough for Cerebras Free Trial limits.
 It reports money, room, safety, and fallback failures as release-gate errors; wording differences in
-document/PED asks remain visible as diagnostic warnings. The live run also reports latency per case.
+document/PED asks remain visible as diagnostic warnings. The live run also reports process telemetry:
+model/tool calls, intermediate steps, latency, and model-vs-local time shares.
+
+### Evaluation and release gates
+
+The evaluation follows the product chain end to end:
+
+```text
+photographed record → source-grounded read → safe physical ask
+                   → deterministic forecast → one counter action
+                   → re-read → only the fixable line clears
+```
+
+The gates stay separate:
+
+- safety: zero unsupported clinical statements, unsafe asks, or unsafe unreadable-case confidence;
+- deterministic: exact amount conservation, input invariance, and safe resolution deltas;
+- live task quality: field-level precision/recall, grounding, abstention, and workflow survival;
+- process: model/tool calls, intermediate step timings, phase pass rates, and latency.
+
+The concrete pass/fail rubric is versioned in [`evals/rubric.ts`](./evals/rubric.ts), with examples
+for every criterion. The detailed harness documentation is in [`evals/README.md`](./evals/README.md).
+Human alignment is reported only after at least 20 blinded, evidence-first reviews and requires at
+least 80% agreement with both human and expert decisions. Position and length bias are measured
+from seeded A/B reviews; without review files, both tracks correctly report **unmeasured**.
+
+The committed corpus is synthetic, but a live evaluation still uploads its images to the configured
+Cerebras endpoint. Run that only when the transfer is approved. CI runs the offline safety,
+deterministic, and reference-workflow gates by default; see
+[`regression.yml`](./.github/workflows/regression.yml).
 
 ## Where to look
 

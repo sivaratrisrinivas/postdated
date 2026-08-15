@@ -7,6 +7,80 @@ All ten case packs are fictional. They are synthetic documents, synthetic bills,
 synthetic ground truth. Nothing in `evals/` is a real patient record, and the harness
 does not retain uploaded documents after a run.
 
+## Evaluation design from first principles
+
+The product promise is a chain, not a model benchmark:
+
+```text
+photographed record → source-grounded read → safe physical ask
+                   → deterministic forecast → one counter action
+                   → re-read → only the fixable line clears
+```
+
+Each link has a different kind of truth, so the harness keeps four gates separate:
+
+| Gate | What is being proven | What counts as failure |
+|---|---|---|
+| Safety | The system never turns an absent/negated clinical fact into an assertion | Any unsupported clinical span, unsafe ask, or unsafe confidence on an unreadable case |
+| Deterministic | The money and state transitions obey the policy contract | Any balance error, duplicate charge, negative/fractional rupee, subtotal double-count, or policy loss cleared by a document fix |
+| Non-deterministic task | A live read is useful without pretending to be calibrated | Field-level money/room errors, missed recoverable grounds, hallucinated text, or no safe abstention |
+| End-to-end workflow | The same output survives the complete product journey | The read cannot produce a safe action, the action does not clear exactly its expected line, or applying it twice changes the result |
+
+The safety, deterministic, and reference-workflow tracks are release gates: zero failures.
+The non-deterministic track reports field-level precision, recall, grounding, and abstention
+separately; those numbers must not compensate for a safety or arithmetic failure. The reference
+workflow is offline and uses hand-written truth. When a live key is present, each model response
+is also fed through the deterministic forecast and physical-ask guard so the route is evaluated
+as the app uses it, not as an isolated JSON endpoint.
+
+### Clear rubric
+
+The machine-readable rubric is versioned in `evals/rubric.ts` (`postdated-e2e-2026-08-15-v1`).
+Every criterion has a binary question and concrete pass/fail examples. The release criteria are
+source grounding, safe abstention, safe physical asks, amount conservation, invariance, and exact
+resolution deltas. “Next action” is diagnostic because usefulness needs human review; it cannot
+compensate for a safety failure.
+
+### Human alignment
+
+The repository does not contain human labels yet, so the run reports human alignment as
+**unmeasured**, never as a guessed score. To measure it, create a JSON array and point
+`POSTDATED_HUMAN_ALIGNMENT_PATH` at it:
+
+```json
+[
+  {
+    "case_id": "case-01-fever-negation",
+    "rubric_id": "safety.source_grounding",
+    "automated_decision": "pass",
+    "human_decision": "pass",
+    "expert_decision": "pass",
+    "evidence_codes": ["source_span"]
+  }
+]
+```
+
+The scorer reports automated agreement with both human and expert decisions, plus human–expert
+agreement. It requires at least 20 adjudicated decisions and both automated agreement rates to be
+at least 80% before reporting `passed`. Reviewers should be blinded to the automated decision and
+record concise evidence codes before choosing pass/fail.
+
+### Process tracking
+
+Live extraction and policy routes return non-sensitive telemetry for input validation, the model
+call, and response parsing. The live table reports model calls, tool calls, step count, per-case
+latency, and model/local latency shares. The reference workflow separately reports checks by
+phase; a fast response never earns quality credit.
+
+### Bias control
+
+For preference studies, put pairwise reviews in a JSON array and set
+`POSTDATED_PAIRWISE_REVIEW_PATH`. `evals/bias.eval.ts` gives each comparison a stable seeded A/B
+order, asks for evidence codes before the choice, and measures first-position bias and whether
+the chosen output is systematically longer. Hidden chain-of-thought is not collected; the fixed
+evidence checklist is the auditable substitute. The release limits are 10 percentage points for
+position bias and 20% for normalized length bias, with at least 20 pairwise reviews.
+
 ## Run it
 
 The deterministic checks need no API key:
@@ -53,22 +127,27 @@ an unreadable section, an affirmed fever, an implant-document gap, and a mixed c
 |---|---|
 | Ground coverage vs. Ombudsman taxonomy | **4 fully / 12 partly / 8 not seen**, from the hand-read public research already in `docs/research/ombudsman-repudiation-grounds.md` |
 | Policy-parameter extraction accuracy | Per-field exact rows for bill money, room category/rate/nights, missing documents, unestablished items, PED phrases, hallucinated clinical fields, and safe abstention; compared with hand-written truth |
-| Fabrication-guard block rate | Fixed adversarial phrase list over every fictional case, with negation quotes checked where the source says “no” |
+| Fabrication-guard safety | Adversarial block recall and false-block rate over every fictional case, with negation quotes checked where the source says “no” |
 | Deterministic invariants | Totals balance, no negative/fractional rupees, no duplicate reasons, physical asks remain guard-safe, bill order is irrelevant, and printed subtotal rows cannot double a claim |
-| Latency per letter | Per-case milliseconds from the live `/api/extract` call; fixture responses fail the case |
+| Process and latency | Per-case milliseconds plus model/tool calls, step count, and model/local latency shares; fixture responses fail the case |
 | **False-green rate** | **Unmeasured — say so.** There are no real approved/denied pairs in this corpus. |
+
+The live table additionally reports precision alongside recall for unestablished items and
+pre-existing-disease trigger phrases, source-grounded clinical statements, and whether the live
+result survives the end-to-end workflow gate.
 
 The extraction report intentionally does not collapse money, room fields, missing
 documents, hallucinations, and abstention into a single number. A model can be right on
 money and wrong on a safety field; the table must keep those facts visible.
 
-The extraction report also shows set recall for missing documents, unestablished items, and PED
-phrases alongside the exact-string result. Exact matching remains visible because wording matters
-for the demo, while recall shows whether a live read found the expected issue under minor phrasing
-variation. Missing-document and PED exact-string differences are diagnostic warnings rather than
-release-gate failures: a safe paraphrase or an extra safe ask should not create a false red. The
-gate still fails on transport/fallback responses, money or room errors, wrong doctor questions,
-unsupported clinical text, and unsafe confidence.
+The extraction report also shows set precision and recall for missing documents, unestablished
+items, and PED phrases alongside the exact-string result. Exact matching remains visible because
+wording matters for the demo, while precision/recall show whether a live read found the expected
+issue under minor phrasing variation without flooding the user with extra asks. Missing-document
+and PED exact-string differences are diagnostic warnings rather than release-gate failures: a
+safe paraphrase or an extra safe ask should not create a false red. The gate still fails on
+transport/fallback responses, money or room errors, wrong doctor questions, unsupported clinical
+text, and unsafe confidence.
 
 ## What a stronger evaluation needs next
 
@@ -88,3 +167,12 @@ Keep these as separate tracks rather than inventing one headline score:
 5. **Robustness:** run the same truth through image perturbations and harmless input changes such
    as bill-line reordering and duplicate total rows. The deterministic invariant suite covers the
    latter two now.
+
+The offline reference workflow now covers the last-mile composition in this repository. It is
+still not a calibration study: the model may be useful and safe on these cases while its future
+deny/approve probability remains unknown.
+
+The regression workflow in `.github/workflows/regression.yml` runs tests, type-checking, lint,
+production build, and the offline eval on every push and pull request. Live extraction remains an
+explicit opt-in because it consumes provider quota; when the key and dev server are available,
+`npm run eval` adds that live gate.

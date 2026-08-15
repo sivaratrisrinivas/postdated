@@ -1,6 +1,12 @@
 import { readFileSync } from 'node:fs';
+import { createJiti } from 'jiti';
+import { summariseProcess, type ProcessTrace } from '../lib/process.ts';
 import type { Extraction } from '../lib/types.ts';
 import { loadCorpus, type CasePack } from './corpus.ts';
+
+const jiti = createJiti(import.meta.url);
+const { evaluateLiveWorkflow } = (await jiti.import('../lib/evaluation.ts')) as typeof import('../lib/evaluation.ts');
+const { NIVA_BUPA_REASSURE_2 } = (await jiti.import('../lib/policy.ts')) as typeof import('../lib/policy.ts');
 
 interface ExtractRow {
   id: string;
@@ -10,12 +16,24 @@ interface ExtractRow {
   room: string;
   missingDocuments: string;
   missingDocumentsRecall: string;
+  missingDocumentsPrecision: string;
   unestablished: string;
   unestablishedRecall: string;
+  unestablishedPrecision: string;
   pedPhrases: string;
   pedPhrasesRecall: string;
+  pedPhrasesPrecision: string;
   hallucinatedFields: number;
+  groundedClinicalStatements: string;
   safeAbstention: string;
+  workflow: string;
+  workflowChecks: string;
+  processTrace: string;
+  modelCalls: number | string;
+  toolCalls: number | string;
+  processSteps: number | string;
+  modelLatencyShare: string;
+  localLatencyShare: string;
   failures: string[];
   warnings: string[];
 }
@@ -35,6 +53,12 @@ function recall(actual: readonly string[], expected: readonly string[]): string 
   if (expected.length === 0) return actual.length === 0 ? '100%' : '0%';
   const matched = expected.filter((value) => actual.includes(value)).length;
   return `${Math.round((matched / expected.length) * 100)}%`;
+}
+
+function precision(actual: readonly string[], expected: readonly string[]): string {
+  if (actual.length === 0) return expected.length === 0 ? '100%' : 'n/a';
+  const matched = actual.filter((value) => expected.includes(value)).length;
+  return `${Math.round((matched / actual.length) * 100)}%`;
 }
 
 function exactMoney(actual: Extraction, expected: Extraction): [number, number] {
@@ -98,12 +122,24 @@ function scoreExtraction(
     room: `${roomChecks.filter(Boolean).length}/3`,
     missingDocuments: missingDocumentsExact ? 'exact' : 'mismatch',
     missingDocumentsRecall: recall(actual.missing_documents, expected.missing_documents),
+    missingDocumentsPrecision: precision(actual.missing_documents, expected.missing_documents),
     unestablished: unestablishedExact ? 'exact' : 'mismatch',
     unestablishedRecall: recall(actual.unestablished, expected.unestablished),
+    unestablishedPrecision: precision(actual.unestablished, expected.unestablished),
     pedPhrases: pedExact ? 'exact' : 'mismatch',
     pedPhrasesRecall: recall(actual.ped_trigger_phrases, expected.ped_trigger_phrases),
+    pedPhrasesPrecision: precision(actual.ped_trigger_phrases, expected.ped_trigger_phrases),
     hallucinatedFields: hallucinated,
+    groundedClinicalStatements: `${actual.clinical_statements.length - hallucinated}/${actual.clinical_statements.length}`,
     safeAbstention: safeAbstention ? 'pass' : 'fail',
+    workflow: 'not-run',
+    workflowChecks: 'not-run',
+    processTrace: 'not-run',
+    modelCalls: 'n/a',
+    toolCalls: 'n/a',
+    processSteps: 'n/a',
+    modelLatencyShare: 'unmeasured',
+    localLatencyShare: 'unmeasured',
     failures,
     warnings,
   };
@@ -147,18 +183,42 @@ export async function runExtractEval(
       extraction?: Extraction;
       source?: string;
       latency_ms?: number;
+      trace?: ProcessTrace;
     };
     if (!response.ok || !body.extraction || !body.source) {
       failures.push(`${pack.groundTruth.id}: route returned HTTP ${response.status}`);
       continue;
     }
+    const measuredLatency = body.latency_ms ?? Date.now() - started;
     const row = scoreExtraction(
       pack,
       body.extraction,
       pack.source,
       body.source,
-      body.latency_ms ?? Date.now() - started,
+      measuredLatency,
     );
+    const process = summariseProcess(body.trace, measuredLatency);
+    row.processTrace = process.traceComplete ? 'complete' : 'missing/incomplete';
+    row.modelCalls = process.traceComplete ? process.modelCalls : 'n/a';
+    row.toolCalls = process.traceComplete ? process.toolCalls : 'n/a';
+    row.processSteps = process.traceComplete ? process.steps : 'n/a';
+    row.modelLatencyShare = formatRatio(process.modelCallRatio);
+    row.localLatencyShare = formatRatio(process.localStepRatio);
+    if (!process.traceComplete) row.failures.push('process telemetry is missing or incomplete');
+    const workflow = evaluateLiveWorkflow(
+      {
+        id: pack.groundTruth.id,
+        source: pack.source,
+        extraction: pack.groundTruth.extraction,
+        guard_verdicts: pack.groundTruth.guard_verdicts,
+        resolution: pack.groundTruth.resolution,
+      },
+      body.extraction,
+      NIVA_BUPA_REASSURE_2,
+    );
+    row.workflow = workflow.failures.length === 0 ? 'pass' : 'fail';
+    row.workflowChecks = `${workflow.passed}/${workflow.checks}`;
+    row.failures.push(...workflow.failures.map((failure) => `workflow: ${failure}`));
     rows.push(row);
     failures.push(...row.failures.map((failure) => `${pack.groundTruth.id}: ${failure}`));
     warnings.push(...row.warnings.map((warning) => `${pack.groundTruth.id}: ${warning}`));
@@ -179,15 +239,31 @@ export function printExtractReport(report: ExtractReport): void {
       room: row.room,
       missing_docs: row.missingDocuments,
       missing_docs_recall: row.missingDocumentsRecall,
+      missing_docs_precision: row.missingDocumentsPrecision,
       unestablished: row.unestablished,
       unestablished_recall: row.unestablishedRecall,
+      unestablished_precision: row.unestablishedPrecision,
       PED: row.pedPhrases,
       PED_recall: row.pedPhrasesRecall,
+      PED_precision: row.pedPhrasesPrecision,
       hallucinated: row.hallucinatedFields,
+      grounded_clinical: row.groundedClinicalStatements,
       abstention: row.safeAbstention,
+      workflow: row.workflow,
+      workflow_checks: row.workflowChecks,
+      process_trace: row.processTrace,
+      model_calls: row.modelCalls,
+      tool_calls: row.toolCalls,
+      process_steps: row.processSteps,
+      model_latency_share: row.modelLatencyShare,
+      local_latency_share: row.localLatencyShare,
       latency_ms: row.latencyMs,
     })),
   );
   for (const failure of report.failures) console.error(`  FAIL ${failure}`);
   for (const warning of report.warnings) console.warn(`  WARN ${warning}`);
+}
+
+function formatRatio(value: number | null): string {
+  return value === null ? 'unmeasured' : `${(value * 100).toFixed(1)}%`;
 }

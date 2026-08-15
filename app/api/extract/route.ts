@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { SEEDED_EXTRACTION } from '@/lib/fixture';
+import type { ProcessTrace } from '@/lib/process';
 import type { Extraction } from '@/lib/types';
+import { validateImagePayload } from '@/lib/upload-validation';
 
 /**
  * The one live model call on the demo's critical path: a photographed discharge summary
@@ -110,14 +112,14 @@ For ped_trigger_phrases, copy the exact visible phrase when the page records a p
 Domain context for that judgement, from public Ombudsman awards: the single most common missing document in Indian health claims is the indoor case papers (the ward's day-by-day nursing and treatment record), and the single most consequential unwritten statement is why inpatient admission was required at all. Check for both before anything else. Report them only if this page genuinely lacks them.`;
 
 export async function POST(request: Request) {
+  const started = Date.now();
   let allowFixture = false;
   try {
     const { image, media_type, allow_fixture } = await request.json();
     allowFixture = Boolean(allow_fixture);
 
-    if (!image) {
-      return NextResponse.json({ error: 'no image' }, { status: 400 });
-    }
+    const imagePayload = validateImagePayload(image, media_type);
+    if (!imagePayload.ok) return NextResponse.json({ error: imagePayload.error }, { status: 400 });
     if (!process.env.CEREBRAS_API_KEY) {
       if (allowFixture) {
         // Only preconfigured demo cases may use the committed fixture. A custom upload
@@ -130,8 +132,9 @@ export async function POST(request: Request) {
       );
     }
 
-    const started = Date.now();
+    const validatedAt = Date.now();
 
+    const modelStarted = Date.now();
     const response = await fetch(CEREBRAS_API_URL, {
       method: 'POST',
       headers: {
@@ -156,7 +159,7 @@ export async function POST(request: Request) {
               {
                 type: 'image_url',
                 image_url: {
-                  url: `data:${media_type ?? 'image/jpeg'};base64,${image}`,
+                  url: `data:${imagePayload.mediaType};base64,${image}`,
                 },
               },
             ],
@@ -172,6 +175,7 @@ export async function POST(request: Request) {
         },
       }),
     });
+    const modelFinishedAt = Date.now();
 
     if (!response.ok) {
       throw new Error(`Cerebras returned HTTP ${response.status}`);
@@ -187,11 +191,23 @@ export async function POST(request: Request) {
     }
 
     const extraction = JSON.parse(text) as Extraction;
+    const finishedAt = Date.now();
+    const trace: ProcessTrace = {
+      tool_calls: 0,
+      model_calls: 1,
+      steps: [
+        { name: 'input_validation', latency_ms: validatedAt - started },
+        { name: 'model_call', latency_ms: modelFinishedAt - modelStarted },
+        { name: 'response_parse', latency_ms: finishedAt - modelFinishedAt },
+      ],
+      total_latency_ms: finishedAt - started,
+    };
 
     return NextResponse.json({
       extraction,
       source: 'live',
-      latency_ms: Date.now() - started,
+      latency_ms: finishedAt - started,
+      trace,
       usage: data.usage,
     });
   } catch (error) {
