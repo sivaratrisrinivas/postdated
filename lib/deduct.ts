@@ -83,7 +83,7 @@ function roomRentExcess(extraction: Extraction, policy: Policy): Disallowance[] 
       basis:
         `${policy.product} schedule elects ${p.category} at ₹${p.eligible_rate.toLocaleString('en-IN')}/day. ` +
         `Billed at ₹${p.actual_rate.toLocaleString('en-IN')}/day for ${extraction.room.nights} nights. ` +
-        `${policy.clause_ref}`,
+        `${policy.clause_ref}. Exact clause: “${policy.clause_verbatim}”`,
     },
   ];
 }
@@ -154,7 +154,7 @@ function recoverable(extraction: Extraction, residual: number): Disallowance[] {
         bucket: 'C' as const,
         reason: `${doc} not submitted`,
         amount: 0,
-        basis: `The payer treats the charges this record substantiates as unproven without it.`,
+        basis: `Exact missing document: “${doc}”. The payer treats the charges this record substantiates as unproven without it.`,
         action: documentDemandFor(doc),
       },
     })),
@@ -165,7 +165,7 @@ function recoverable(extraction: Extraction, residual: number): Disallowance[] {
         reason: `Summary does not establish: ${item.toLowerCase()}`,
         amount: 0,
         basis:
-          'Only the treating doctor can answer this, and only the doctor can sign it. ' +
+          `Exact missing statement: “${item}”. Only the treating doctor can answer this, and only the doctor can sign it. ` +
           'The system does not write it.',
         action: doctorQuestionFor(item),
       },

@@ -8,27 +8,50 @@ import { GuardPanel } from '@/components/GuardPanel';
 import { Letter } from '@/components/Letter';
 import { compressForUpload } from '@/lib/compress';
 import { computeForecast } from '@/lib/deduct';
-import { SEEDED_EXTRACTION, SEEDED_SUMMARY_TEXT } from '@/lib/fixture';
-import { NIVA_BUPA_REASSURE_2 } from '@/lib/policy';
+import {
+  amendDemoExtraction,
+  demoCaseFor,
+  DEMO_CASES,
+  type DemoCase,
+  type DemoCaseId,
+} from '@/lib/demo';
+import { SEEDED_SUMMARY_TEXT } from '@/lib/fixture';
+import { NIVA_BUPA_REASSURE_2, type Policy } from '@/lib/policy';
 import type { Disallowance, Extraction } from '@/lib/types';
 
-type Status = 'idle' | 'reading' | 'ready' | 'complete';
-type Source = 'live' | 'fixture';
-type Stage = 'capture' | 'forecast' | 'action' | 'complete';
+type Status = 'idle' | 'reading' | 'ready' | 'rescan' | 'complete';
+type Source = 'live' | 'fixture' | 'demo';
+type Stage = 'policy' | 'capture' | 'forecast' | 'action' | 'rescan' | 'complete';
+type CaptureMode = 'custom' | 'demo' | 'rescan';
 
 export default function Page() {
   const [status, setStatus] = useState<Status>('idle');
+  const [policy, setPolicy] = useState<Policy | null>(null);
+  const [policyBusy, setPolicyBusy] = useState(false);
   const [extraction, setExtraction] = useState<Extraction | null>(null);
-  const [source, setSource] = useState<Source>('live');
+  const [source, setSource] = useState<Source>('demo');
   const [latency, setLatency] = useState<number | null>(null);
   const [resolved, setResolved] = useState<ReadonlySet<string>>(new Set());
+  const [resolvedLines, setResolvedLines] = useState<readonly Disallowance[]>([]);
   const [activeLine, setActiveLine] = useState<Disallowance | null>(null);
+  const [activeDemoCase, setActiveDemoCase] = useState<DemoCase | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
+  const policyInput = useRef<HTMLInputElement>(null);
 
   const forecast = useMemo(
-    () => (extraction ? computeForecast(extraction, NIVA_BUPA_REASSURE_2) : null),
-    [extraction],
+    () => (extraction && policy ? computeForecast(extraction, policy) : null),
+    [extraction, policy],
   );
+
+  const displayForecast = useMemo(() => {
+    if (!forecast) return null;
+    const currentReasons = new Set(forecast.lines.map((line) => line.reason));
+    const greyedLines = resolvedLines.filter((line) => !currentReasons.has(line.reason));
+    return greyedLines.length > 0
+      ? { ...forecast, lines: [...forecast.lines, ...greyedLines] }
+      : forecast;
+  }, [forecast, resolvedLines]);
 
   const nextFix = useMemo(
     () =>
@@ -36,7 +59,43 @@ export default function Page() {
     [forecast, resolved],
   );
 
-  const capture = useCallback(async (file: File) => {
+  const applyInitialRead = useCallback((nextExtraction: Extraction, nextSource: Source, nextLatency: number | null) => {
+    setExtraction(nextExtraction);
+    setSource(nextSource);
+    setLatency(nextLatency);
+    setResolved(new Set());
+    setResolvedLines([]);
+    setActiveLine(null);
+    setError(null);
+    setStatus('ready');
+  }, []);
+
+  const applyRescan = useCallback(
+    (nextExtraction: Extraction, nextSource: Source, nextLatency: number | null) => {
+      if (!policy) return;
+      const nextForecast = computeForecast(nextExtraction, policy);
+      const resolvedHistory = resolvedLines.filter(
+        (oldLine) => !nextForecast.lines.some((newLine) => equivalentLine(oldLine, newLine)),
+      );
+      const nextResolved = new Set(resolvedHistory.map((line) => line.reason));
+      const stillOpen = nextForecast.lines.some(
+        (line) => line.bucket === 'C' && !nextResolved.has(line.reason),
+      );
+
+      setExtraction(nextExtraction);
+      setSource(nextSource);
+      setLatency(nextLatency);
+      setResolvedLines(resolvedHistory);
+      setResolved(nextResolved);
+      setActiveLine(null);
+      setError(null);
+      setStatus(stillOpen ? 'ready' : 'complete');
+    },
+    [policy, resolvedLines],
+  );
+
+  const capture = useCallback(async (file: File, mode: CaptureMode, demoCase?: DemoCase) => {
+    setError(null);
     setStatus('reading');
     const started = Date.now();
     try {
@@ -44,43 +103,81 @@ export default function Page() {
       const res = await fetch('/api/extract', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ image: base64, media_type, allow_fixture: mode === 'demo' }),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.extraction) throw new Error(data.error ?? 'The image could not be read.');
+      const nextSource: Source = data.source === 'live' ? 'live' : 'fixture';
+      const nextLatency = data.latency_ms ?? Date.now() - started;
+      if (mode !== 'demo') setActiveDemoCase(null);
+      if (mode === 'rescan') applyRescan(data.extraction, nextSource, nextLatency);
+      else applyInitialRead(data.extraction, nextSource, nextLatency);
+    } catch (readError) {
+      if (mode === 'demo' && demoCase) {
+        applyInitialRead(demoCase.fallback, 'demo', null);
+        return;
+      }
+      setError(readError instanceof Error ? readError.message : 'The image could not be read.');
+      setStatus(mode === 'rescan' ? 'rescan' : 'idle');
+    }
+  }, [applyInitialRead, applyRescan]);
+
+  const runDemoCase = useCallback(async (id: DemoCaseId) => {
+    const demoCase = demoCaseFor(id);
+    setActiveDemoCase(demoCase);
+    setError(null);
+    setStatus('reading');
+
+    if (demoCase.format !== 'image' || !demoCase.asset) {
+      applyInitialRead(demoCase.fallback, 'demo', null);
+      return;
+    }
+
+    try {
+      const response = await fetch(demoCase.asset);
+      if (!response.ok) throw new Error('The sample image is unavailable.');
+      const blob = await response.blob();
+      await capture(new File([blob], `${demoCase.id}.jpg`, { type: blob.type || 'image/jpeg' }), 'demo', demoCase);
+    } catch {
+      applyInitialRead(demoCase.fallback, 'demo', null);
+    }
+  }, [applyInitialRead, capture]);
+
+  const loadPickedPolicy = useCallback(() => {
+    setPolicy(NIVA_BUPA_REASSURE_2);
+    setError(null);
+    setStatus('idle');
+  }, []);
+
+  const loadPolicyPhoto = useCallback(async (file: File) => {
+    setPolicyBusy(true);
+    setError(null);
+    try {
+      const { base64, media_type } = await compressForUpload(file);
+      const res = await fetch('/api/policy', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ image: base64, media_type }),
       });
       const data = await res.json();
-      setExtraction(data.extraction);
-      setSource(data.source === 'live' ? 'live' : 'fixture');
-      setLatency(data.latency_ms ?? Date.now() - started);
-    } catch {
-      // §14 contingency: the demo never dies on the capture path.
-      setExtraction(SEEDED_EXTRACTION);
-      setSource('fixture');
-      setLatency(null);
+      if (!res.ok || !data.policy) throw new Error(data.error ?? 'The policy page could not be read.');
+      setPolicy(data.policy as Policy);
+      setStatus('idle');
+    } catch (policyError) {
+      setError(policyError instanceof Error ? policyError.message : 'The policy page could not be read.');
+    } finally {
+      setPolicyBusy(false);
     }
-    setResolved(new Set());
-    setActiveLine(null);
-    setStatus('ready');
   }, []);
 
-  const runSeeded = useCallback(() => {
-    setExtraction(SEEDED_EXTRACTION);
-    setSource('fixture');
-    setLatency(null);
-    setResolved(new Set());
+  const resolve = useCallback((line: Disallowance) => {
+    const nextLines = [...resolvedLines.filter((item) => item.reason !== line.reason), line];
+    setResolvedLines(nextLines);
+    setResolved(new Set(nextLines.map((item) => item.reason)));
     setActiveLine(null);
-    setStatus('ready');
-  }, []);
-
-  const resolve = useCallback((reason: string) => {
-    const nextResolved = new Set(resolved).add(reason);
-    setResolved(nextResolved);
-    setActiveLine(null);
-    if (
-      forecast &&
-      !forecast.lines.some((line) => line.bucket === 'C' && !nextResolved.has(line.reason))
-    ) {
-      setStatus('complete');
-    }
-  }, [forecast, resolved]);
+    setError(null);
+    setStatus('rescan');
+  }, [resolvedLines]);
 
   const openNextFix = useCallback(() => {
     if (nextFix) setActiveLine(nextFix);
@@ -89,30 +186,47 @@ export default function Page() {
   const startFresh = useCallback(() => {
     setStatus('idle');
     setExtraction(null);
-    setSource('live');
+    setSource('demo');
     setLatency(null);
     setResolved(new Set());
+    setResolvedLines([]);
     setActiveLine(null);
+    setActiveDemoCase(null);
+    setError(null);
     if (fileInput.current) fileInput.current.value = '';
   }, []);
 
-  const stage: Stage = activeLine
-    ? 'action'
-    : status === 'complete'
-      ? 'complete'
-      : status === 'ready'
-        ? 'forecast'
-        : 'capture';
+  const stage: Stage = !policy
+    ? 'policy'
+    : activeLine
+      ? 'action'
+      : status === 'rescan'
+        ? 'rescan'
+        : status === 'complete'
+          ? 'complete'
+          : status === 'ready'
+            ? 'forecast'
+            : 'capture';
 
   return (
     <main className="site-shell">
       <SiteNav stage={stage} onStartFresh={startFresh} />
 
+      {stage === 'policy' && (
+        <PolicyStage
+          busy={policyBusy}
+          error={error}
+          onPickInsurer={loadPickedPolicy}
+          onPickPhoto={() => policyInput.current?.click()}
+        />
+      )}
+
       {stage === 'capture' && (
         <CaptureStage
           busy={status === 'reading'}
+          error={error}
           onPick={() => fileInput.current?.click()}
-          onSeeded={runSeeded}
+          onDemoCase={runDemoCase}
         />
       )}
 
@@ -124,31 +238,71 @@ export default function Page() {
         className="hidden"
         onChange={(event) => {
           const file = event.target.files?.[0];
-          if (file) void capture(file);
+          if (file) void capture(file, status === 'rescan' ? 'rescan' : 'custom', activeDemoCase ?? undefined);
           event.target.value = '';
         }}
       />
 
-      {stage === 'forecast' && forecast && extraction && (
+      <input
+        ref={policyInput}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void loadPolicyPhoto(file);
+          event.target.value = '';
+        }}
+      />
+
+      {stage === 'forecast' && displayForecast && extraction && policy && (
         <ForecastStage
-          forecast={forecast}
+          forecast={displayForecast}
           extraction={extraction}
           resolved={resolved}
+          policy={policy}
           source={source}
           latency={latency}
           nextFix={nextFix}
           onOpenNextFix={openNextFix}
+          onOpenLine={setActiveLine}
           onPick={() => fileInput.current?.click()}
           onStartFresh={startFresh}
         />
       )}
 
-      {stage === 'complete' && forecast && (
+      {stage === 'rescan' && extraction && activeDemoCase && (
+        <RescanStage
+          busy={status === 'reading'}
+          error={error}
+          onPick={() => fileInput.current?.click()}
+          onDemoScan={() => {
+            const line = resolvedLines[resolvedLines.length - 1];
+            if (line) applyRescan(amendDemoExtraction(extraction, line), 'demo', null);
+          }}
+          onBack={() => setStatus('ready')}
+        />
+      )}
+
+      {stage === 'rescan' && extraction && !activeDemoCase && (
+        <RescanStage
+          busy={status === 'reading'}
+          error={error}
+          onPick={() => fileInput.current?.click()}
+          onBack={() => setStatus('ready')}
+        />
+      )}
+
+      {stage === 'complete' && displayForecast && policy && (
         <CompletionStage
-          forecast={forecast}
+          forecast={displayForecast}
           resolved={resolved}
+          policy={policy}
+          resolvedLines={resolvedLines}
           source={source}
           latency={latency}
+          onOpenLine={setActiveLine}
           onStartFresh={startFresh}
         />
       )}
@@ -157,6 +311,67 @@ export default function Page() {
         <AskSheet line={activeLine} onResolve={resolve} onClose={() => setActiveLine(null)} />
       )}
     </main>
+  );
+}
+
+function equivalentLine(left: Disallowance, right: Disallowance): boolean {
+  return (
+    left.reason === right.reason ||
+    (left.action?.kind === right.action?.kind && left.action?.ask === right.action?.ask)
+  );
+}
+
+function PolicyStage({
+  busy,
+  error,
+  onPickInsurer,
+  onPickPhoto,
+}: {
+  busy: boolean;
+  error: string | null;
+  onPickInsurer: () => void;
+  onPickPhoto: () => void;
+}) {
+  return (
+    <section className="policy-stage" aria-busy={busy} aria-labelledby="policy-title">
+      <div className="policy-copy">
+        <p className="step-count">Set the rule before reading the bill</p>
+        <h1 id="policy-title" className="display-title">
+          Start with the policy that decides what <em>counts.</em>
+        </h1>
+        <p className="stage-lede">
+          Pick a supported insurer for the quickest demo, or photograph the room-rent page from a
+          policy schedule. Every rupee in the future letter will point back to this choice.
+        </p>
+      </div>
+
+      <div className="policy-choice-area">
+        <button type="button" className="policy-choice policy-choice-primary" onClick={onPickInsurer} disabled={busy}>
+          <span>
+            <strong>Niva Bupa · ReAssure 2.0</strong>
+            <small>Pre-parsed policy schedule · ready now</small>
+          </span>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+            <path d="M3 9h11M9.5 4.5 14 9l-4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </button>
+
+        <button type="button" className="policy-choice" onClick={onPickPhoto} disabled={busy}>
+          <span>
+            <strong>{busy ? 'Reading the policy page…' : 'Photograph a policy page'}</strong>
+            <small>Live policy extraction · requires the Cerebras key</small>
+          </span>
+          <span className="policy-choice-note">JPG / PNG</span>
+        </button>
+
+        {error && <p className="inline-error" role="alert">{error}</p>}
+
+        <p className="policy-footnote">
+          POSTDATED does not guess an insurer from a bill. Load the rule first, then read the
+          discharge paperwork against it.
+        </p>
+      </div>
+    </section>
   );
 }
 
@@ -183,14 +398,14 @@ function SiteNav({
 
       <nav className="nav-links" aria-label="Primary navigation">
         <span className="nav-context">Hospital discharge counter</span>
-        {(stage === 'forecast' || stage === 'action') && (
+        {stage !== 'policy' && stage !== 'capture' && (
           <button type="button" className="nav-new-check" onClick={onStartFresh}>
             New check
           </button>
         )}
         <span className="nav-status">
           <span className="status-dot" aria-hidden />
-          {stage === 'capture' ? 'Session ready' : 'Session private'}
+          {stage === 'policy' ? 'Choose a policy' : stage === 'capture' ? 'Session ready' : 'Session private'}
         </span>
       </nav>
     </header>
@@ -199,17 +414,19 @@ function SiteNav({
 
 function CaptureStage({
   busy,
+  error,
   onPick,
-  onSeeded,
+  onDemoCase,
 }: {
   busy: boolean;
+  error: string | null;
   onPick: () => void;
-  onSeeded: () => void;
+  onDemoCase: (id: DemoCaseId) => void;
 }) {
   return (
     <section className="journey-stage" id="journey" aria-busy={busy}>
       <div className="stage-copy">
-        <p className="step-count">01 / 03 · Start at the counter</p>
+        <p className="step-count">01 / 03 · Bring the paperwork</p>
         <h1 className="display-title">
           Find the page that still has <em>time.</em>
         </h1>
@@ -221,17 +438,57 @@ function CaptureStage({
 
         <div className="capture-actions">
           <button type="button" className="primary-action" onClick={onPick} disabled={busy}>
-            {busy ? 'Reading the paperwork…' : 'Photograph the paperwork'}
+            {busy ? 'Reading the paperwork…' : 'Photograph or upload your paperwork'}
             {!busy && (
               <svg className="action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
                 <path d="M2 8h11M8.5 3.5 13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             )}
           </button>
-          <button type="button" className="text-action" onClick={onSeeded} disabled={busy}>
-            See a worked case instead
-          </button>
         </div>
+
+        <p className="capture-explanation">
+          This is the real upload path for a new discharge summary and final bill. For a reliable
+          tour, run one of the three committed demo cases below.
+        </p>
+
+        <div className="demo-case-area">
+          <p className="step-count">Run a committed demo case</p>
+          <div className="demo-case-grid">
+            {DEMO_CASES.map((demoCase) => (
+              <button
+                key={demoCase.id}
+                type="button"
+                className="demo-case"
+                onClick={() => onDemoCase(demoCase.id)}
+                disabled={busy}
+              >
+                {demoCase.format === 'image' && demoCase.asset ? (
+                  <Image
+                    className="demo-case-preview"
+                    src={demoCase.asset}
+                    alt=""
+                    width={96}
+                    height={72}
+                  />
+                ) : (
+                  <span className="demo-case-format" aria-hidden>
+                    {demoCase.format === 'pdf' ? 'PDF' : 'FIX'}
+                  </span>
+                )}
+                <span className="demo-case-copy">
+                  <strong>{demoCase.title}</strong>
+                  <small>{demoCase.description}</small>
+                </span>
+                <svg className="demo-case-arrow" width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
+                  <path d="M2.25 7.5h10.1M8.25 3.4l4.1 4.1-4.1 4.1" stroke="currentColor" strokeWidth="1.25" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {error && <p className="inline-error" role="alert">{error}</p>}
 
         <p className="privacy-note">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -261,24 +518,80 @@ function CaptureStage({
   );
 }
 
+function RescanStage({
+  busy,
+  error,
+  onPick,
+  onDemoScan,
+  onBack,
+}: {
+  busy: boolean;
+  error: string | null;
+  onPick: () => void;
+  onDemoScan?: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <section className="rescan-stage" aria-busy={busy} aria-labelledby="rescan-title">
+      <div className="rescan-copy">
+        <p className="step-count">After the ask · prove the change</p>
+        <h1 id="rescan-title" className="display-title">
+          Now photograph the page you <em>changed.</em>
+        </h1>
+        <p className="stage-lede">
+          Put the document or signed answer back in the frame. POSTDATED will read it again,
+          remove what is now present, and leave the unresolved red lines visible.
+        </p>
+      </div>
+
+      <div className="rescan-actions">
+        <button type="button" className="primary-action" onClick={onPick} disabled={busy}>
+          {busy ? 'Reading the amended page…' : 'Re-photograph the amended summary'}
+          {!busy && (
+            <svg className="action-arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden>
+              <path d="M2 8h11M8.5 3.5 13 8l-4.5 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          )}
+        </button>
+        {onDemoScan && (
+          <button type="button" className="text-action" onClick={onDemoScan} disabled={busy}>
+            Run the amended demo scan
+          </button>
+        )}
+        <button type="button" className="back-action" onClick={onBack} disabled={busy}>
+          <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden>
+            <path d="M12.25 7.5H2.75M6.5 3.25 2.25 7.5l4.25 4.25" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Back to the forecast
+        </button>
+        {error && <p className="inline-error" role="alert">{error}</p>}
+      </div>
+    </section>
+  );
+}
+
 function ForecastStage({
   forecast,
   extraction,
   resolved,
+  policy,
   source,
   latency,
   nextFix,
   onOpenNextFix,
+  onOpenLine,
   onPick,
   onStartFresh,
 }: {
   forecast: ReturnType<typeof computeForecast>;
   extraction: Extraction;
   resolved: ReadonlySet<string>;
+  policy: Policy;
   source: Source;
   latency: number | null;
   nextFix: Disallowance | null;
   onOpenNextFix: () => void;
+  onOpenLine: (line: Disallowance) => void;
   onPick: () => void;
   onStartFresh: () => void;
 }) {
@@ -297,7 +610,7 @@ function ForecastStage({
 
       <div className="forecast-layout">
         <div className="letter-frame">
-          <Letter forecast={forecast} resolved={resolved} />
+          <Letter forecast={forecast} resolved={resolved} policy={policy} onLineSelect={onOpenLine} />
         </div>
 
         <aside className="forecast-side">
@@ -370,18 +683,23 @@ function ForecastStage({
 function CompletionStage({
   forecast,
   resolved,
+  policy,
+  resolvedLines,
   source,
   latency,
+  onOpenLine,
   onStartFresh,
 }: {
   forecast: ReturnType<typeof computeForecast>;
   resolved: ReadonlySet<string>;
+  policy: Policy;
+  resolvedLines: readonly Disallowance[];
   source: Source;
   latency: number | null;
+  onOpenLine: (line: Disallowance) => void;
   onStartFresh: () => void;
 }) {
-  const recovered = forecast.lines
-    .filter((line) => resolved.has(line.reason))
+  const recovered = resolvedLines
     .reduce((sum, line) => sum + line.amount, 0);
   const remaining = forecast.lines
     .filter((line) => !resolved.has(line.reason))
@@ -421,17 +739,24 @@ function CompletionStage({
       </div>
 
       <div className="letter-frame completion-letter-frame">
-        <Letter forecast={forecast} resolved={resolved} />
+        <Letter forecast={forecast} resolved={resolved} policy={policy} onLineSelect={onOpenLine} />
       </div>
     </section>
   );
 }
 
 function Provenance({ source, latency }: { source: Source; latency: number | null }) {
+  const label =
+    source === 'live'
+      ? 'Read live from the photograph'
+      : source === 'demo'
+        ? 'Preconfigured demo case'
+        : 'Fallback fixture';
+
   return (
     <div className="provenance-line" aria-label="Forecast provenance">
       <span className="status-dot" aria-hidden />
-      <span>{source === 'live' ? 'Read live from the photograph' : 'Seeded case'}</span>
+      <span>{label}</span>
       {latency !== null && <span>{(latency / 1000).toFixed(1)}s</span>}
       <span className="deterministic">Arithmetic · deterministic</span>
     </div>

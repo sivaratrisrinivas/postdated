@@ -1217,8 +1217,286 @@ summary:focus-visible {
   white-space: nowrap;
 }
 
+.policy-stage,
+.rescan-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(20rem, 0.9fr);
+  align-items: center;
+  gap: clamp(3rem, 8vw, 9rem);
+  width: min(100% - 3rem, 78rem);
+  min-height: calc(100vh - 5.5rem);
+  margin: 0 auto;
+  padding: 5rem 0 7rem;
+}
+
+.policy-copy,
+.rescan-copy {
+  max-width: 35rem;
+}
+
+.policy-choice-area,
+.rescan-actions {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.policy-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  width: 100%;
+  min-height: 5.2rem;
+  border: 1px solid var(--line);
+  padding: 1.1rem 1.2rem;
+  background: var(--paper);
+  color: var(--ink);
+  text-align: left;
+  transition: border-color 180ms ease, transform 180ms ease, background 180ms ease;
+}
+
+.policy-choice:hover:not(:disabled) {
+  border-color: var(--forest);
+  background: color-mix(in srgb, var(--sage) 32%, var(--paper));
+  transform: translateX(0.25rem);
+}
+
+.policy-choice-primary {
+  border-color: var(--forest);
+  background: var(--forest);
+  color: var(--paper);
+}
+
+.policy-choice-primary:hover:not(:disabled) {
+  border-color: var(--forest-deep);
+  background: var(--forest-deep);
+}
+
+.policy-choice span:first-child {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.policy-choice strong {
+  font-size: 0.92rem;
+}
+
+.policy-choice small {
+  color: color-mix(in srgb, currentColor 68%, transparent);
+  font-size: 0.72rem;
+  line-height: 1.4;
+}
+
+.policy-choice-note {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.policy-choice-primary .policy-choice-note {
+  color: color-mix(in srgb, var(--paper) 68%, transparent);
+}
+
+.policy-footnote,
+.capture-explanation {
+  max-width: 33rem;
+  margin: 1.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.6;
+}
+
+.capture-explanation {
+  margin-top: 1rem;
+}
+
+.demo-case-area {
+  margin-top: 2rem;
+}
+
+.demo-case-grid {
+  display: grid;
+  gap: 0.55rem;
+  margin-top: 0.8rem;
+}
+
+.demo-case {
+  display: grid;
+  grid-template-columns: 3.8rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 4.2rem;
+  border-top: 1px solid var(--line);
+  padding: 0.65rem 0;
+  color: var(--ink);
+  text-align: left;
+  transition: color 180ms ease, transform 180ms ease;
+}
+
+.demo-case:last-child {
+  border-bottom: 1px solid var(--line);
+}
+
+.demo-case:hover:not(:disabled) {
+  color: var(--coral);
+  transform: translateX(0.35rem);
+}
+
+.demo-case-preview,
+.demo-case-format {
+  width: 3.8rem;
+  height: 2.9rem;
+  object-fit: cover;
+}
+
+.demo-case-format {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--sage);
+  color: var(--forest);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.demo-case-copy {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 0;
+}
+
+.demo-case-copy strong {
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.demo-case-copy small {
+  overflow: hidden;
+  color: var(--muted);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.58rem;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-case-arrow {
+  color: var(--muted);
+  transition: transform 180ms ease, color 180ms ease;
+}
+
+.demo-case:hover:not(:disabled) .demo-case-arrow {
+  color: var(--coral);
+  transform: translateX(0.2rem);
+}
+
+.inline-error {
+  margin: 1rem 0 0;
+  border: 1px solid color-mix(in srgb, var(--coral) 50%, var(--line));
+  padding: 0.8rem;
+  background: var(--coral-soft);
+  color: var(--coral);
+  font-size: 0.78rem;
+  line-height: 1.5;
+}
+
+.rescan-actions .primary-action {
+  width: 100%;
+}
+
+.rescan-actions .back-action {
+  justify-self: start;
+  margin: 0.8rem 0 0;
+}
+
+.action-evidence {
+  margin-top: 1.5rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 1rem 0;
+}
+
+.action-evidence-label {
+  margin: 0;
+  color: var(--forest);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.action-evidence p:last-child {
+  margin: 0.55rem 0 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+
+.before-sign-gate {
+  display: grid;
+  gap: 0.7rem;
+  margin: 1.5rem 0 0;
+  border: 1px solid var(--line);
+  padding: 1rem;
+}
+
+.before-sign-gate legend {
+  padding: 0 0.45rem;
+  color: var(--forest);
+  font-family: var(--font-geist-mono), monospace;
+  font-size: 0.61rem;
+  font-weight: 700;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.before-sign-gate > p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.gate-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  color: var(--ink);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.gate-check input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0.1rem 0 0;
+  accent-color: var(--forest);
+}
+
+.action-confirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.letter-line-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+}
+
 @media (max-width: 900px) {
   .journey-stage,
+  .policy-stage,
+  .rescan-stage,
   .forecast-layout,
   .action-layout,
   .completion-stage {
@@ -1227,6 +1505,12 @@ summary:focus-visible {
 
   .journey-stage {
     gap: 3rem;
+    padding-top: 4.5rem;
+  }
+
+  .policy-stage,
+  .rescan-stage {
+    min-height: auto;
     padding-top: 4.5rem;
   }
 
@@ -1263,6 +1547,8 @@ summary:focus-visible {
 @media (max-width: 640px) {
   .site-nav,
   .journey-stage,
+  .policy-stage,
+  .rescan-stage,
   .reading-stage,
   .action-stage,
   .completion-stage {
@@ -1293,6 +1579,12 @@ summary:focus-visible {
 
   .journey-stage {
     min-height: auto;
+    padding: 3.8rem 0 5rem;
+  }
+
+  .policy-stage,
+  .rescan-stage {
+    width: min(100% - 2rem, 90rem);
     padding: 3.8rem 0 5rem;
   }
 

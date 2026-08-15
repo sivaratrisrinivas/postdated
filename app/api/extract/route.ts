@@ -110,15 +110,24 @@ For ped_trigger_phrases, copy the exact visible phrase when the page records a p
 Domain context for that judgement, from public Ombudsman awards: the single most common missing document in Indian health claims is the indoor case papers (the ward's day-by-day nursing and treatment record), and the single most consequential unwritten statement is why inpatient admission was required at all. Check for both before anything else. Report them only if this page genuinely lacks them.`;
 
 export async function POST(request: Request) {
+  let allowFixture = false;
   try {
-    const { image, media_type } = await request.json();
+    const { image, media_type, allow_fixture } = await request.json();
+    allowFixture = Boolean(allow_fixture);
 
     if (!image) {
       return NextResponse.json({ error: 'no image' }, { status: 400 });
     }
     if (!process.env.CEREBRAS_API_KEY) {
-      // Fall back to the committed fixture rather than fail the demo.
-      return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_no_key' });
+      if (allowFixture) {
+        // Only preconfigured demo cases may use the committed fixture. A custom upload
+        // must never look successfully read when the live provider is not configured.
+        return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_no_key' });
+      }
+      return NextResponse.json(
+        { error: 'Live image reading is not configured. Add CEREBRAS_API_KEY and try again.' },
+        { status: 503 },
+      );
     }
 
     const started = Date.now();
@@ -171,7 +180,10 @@ export async function POST(request: Request) {
     const data = (await response.json()) as CerebrasResponse;
     const text = data.choices?.[0]?.message?.content;
     if (!text) {
-      return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_no_text' });
+      if (allowFixture) {
+        return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_no_text' });
+      }
+      return NextResponse.json({ error: 'The image reader returned no extraction.' }, { status: 502 });
     }
 
     const extraction = JSON.parse(text) as Extraction;
@@ -183,8 +195,13 @@ export async function POST(request: Request) {
       usage: data.usage,
     });
   } catch (error) {
-    // The demo never dies on this path. §14: three pre-photographed cases, one keystroke.
+    if (allowFixture) {
+      return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_error' });
+    }
     console.error('extract failed', error instanceof Error ? error.message : 'unknown error');
-    return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_error' });
+    return NextResponse.json(
+      { error: 'The image could not be read. Try a sharper, brighter photograph.' },
+      { status: 502 },
+    );
   }
 }

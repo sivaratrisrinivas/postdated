@@ -10,19 +10,21 @@ file.
 
 - [ ] Print `/summary` at A4, portrait, 100% scale. Lay it on the judges' table.
 - [ ] Open `postdated.vercel.app` on the phone. Load it once so the fonts are cached.
-- [ ] Tap **Or run the seeded case** once, confirm the letter renders, then reload. That
-      pre-warms everything and proves the fallback works before you need it.
+- [ ] Tap **Niva Bupa · ReAssure 2.0**, then run each of the three committed demo cases once:
+      **Original worked case**, **Public photo sample**, and **Print-ready sample**.
 - [ ] Phone on airplane-mode-off, screen brightness up, auto-rotate off.
 
 ## The path
 
 | Time | What you do | What appears |
 |---|---|---|
-| **0:00–0:20** | Read the SMS aloud. *"₹1,73,000 disallowed."* Three weeks after discharge. File closed, doctor on leave. | — |
-| **0:20–0:35** | **Photograph the printed summary on the table.** | Reading the page… |
+| **0:00–0:10** | Tap **Niva Bupa · ReAssure 2.0**. | Policy loaded. |
+| **0:10–0:20** | Read the SMS aloud. *"₹1,73,000 disallowed."* Three weeks after discharge. File closed, doctor on leave. | — |
+| **0:20–0:35** | Choose **Public photo sample** or photograph the printed summary. | Reading the page… |
 | **0:35–1:10** | Say nothing for ~13 seconds. Let it render. Then read the provenance line aloud: *"read live from the photograph."* | Letter. **03 Sept 2026** at the top. **₹1,73,000** in red. Five lines. |
-| **1:10–1:30** | Tap **₹85,000 — Indoor case papers not submitted**. Switch to **ಕನ್ನಡ**. Hold the phone up to your "ward clerk". | The Kannada ask, one instruction, large. |
-| **1:30–1:50** | Doctor writes the line in by hand and signs. Tap **Ward handed it over**. | **₹1,73,000 → ₹88,000.** Approved rises to **₹1,52,000**. The ₹85,000 line goes green and strikes through. |
+| **1:10–1:25** | Tap **₹85,000 — Indoor case papers not submitted**. Switch to **ಕನ್ನಡ**. Hold the phone up to your "ward clerk". | The Kannada ask, one instruction, large. |
+| **1:25–1:40** | Check the three **Before you sign** boxes, then confirm **The ward handed it over**. | The app asks for the amended page. |
+| **1:40–1:55** | Tap **Run the amended demo scan**. | **₹1,73,000 → ₹88,000.** Approved rises to **₹1,52,000**. The ₹85,000 line goes green and strikes through. |
 | **1:50–2:10** | The honesty beat. Read it off the coverage panel. | 4 / 12 / 8 |
 | **2:10–2:40** | Scroll to the guard. Ask a judge for a clinical fact. Tap their phrase or type it. | **BLOCKED**, the term named, converted to ASK THE DOCTOR. |
 | **2:40–3:00** | ₹40 per pre-auth file. 70,000+ private hospitals. One buyer, named. | Static mock — spoken, not built. |
@@ -102,7 +104,7 @@ what "etc." means, and that choice would be the arithmetic.
 
 | Failure | Do this |
 |---|---|
-| Camera won't open | Tap **Or run the seeded case**. Say: "this is the case pre-loaded; the live read is the same call." |
+| Camera won't open | Tap **Original worked case**. Say: "this is the hand-checked case; the photo and custom upload paths use the same forecast code." |
 | Extraction slow or wrong | It already fell back to the fixture — the letter is on screen either way. Keep going. Do not mention it unless the provenance dot is amber and someone asks; then say "seeded case, and the read is the same code path." |
 | No network at all | Seeded case works with no network once the page is loaded. |
 | Guard misbehaves on a judge's phrase | Tap one of the three chips instead. §14 permits demonstrating the rule on a known phrase. |

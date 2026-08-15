@@ -19,14 +19,34 @@ const FONT_FOR: Record<LanguageCode, string> = {
 
 export interface AskSheetProps {
   line: Disallowance;
-  onResolve: (reason: string) => void;
+  onResolve: (line: Disallowance) => void;
   onClose: () => void;
 }
 
 /** The one physical action screen. It is a page in the journey, not an interrupting modal. */
 export function AskSheet({ line, onResolve, onClose }: AskSheetProps) {
   const [lang, setLang] = useState<LanguageCode>('en');
+  const [checked, setChecked] = useState<ReadonlySet<number>>(new Set());
   const action = line.action;
+  const checklist =
+    action?.kind === 'doctor_question'
+      ? [
+          'The doctor answered this exact question in the summary.',
+          'The patient name or IP number is visible.',
+          'The doctor signed and stamped the entry.',
+        ]
+      : [
+          'This is the original document, not a verbal promise.',
+          'The patient name or IP number is visible.',
+          'The ward has signed or stamped the handover.',
+        ];
+
+  const toggleCheck = (index: number) => {
+    const next = new Set(checked);
+    if (next.has(index)) next.delete(index);
+    else next.add(index);
+    setChecked(next);
+  };
 
   return (
     <section className="action-stage" aria-labelledby="action-title">
@@ -57,6 +77,11 @@ export function AskSheet({ line, onResolve, onClose }: AskSheetProps) {
           </p>
           <p className="action-amount">₹{line.amount.toLocaleString('en-IN')}</p>
           <p className="action-reason">{line.reason}</p>
+
+          <div className="action-evidence">
+            <p className="action-evidence-label">Why this red line appears</p>
+            <p>{line.basis}</p>
+          </div>
 
           {action ? (
             <>
@@ -93,11 +118,29 @@ export function AskSheet({ line, onResolve, onClose }: AskSheetProps) {
               : line.basis}
           </p>
 
+          {action && line.bucket === 'C' && (
+            <fieldset className="before-sign-gate">
+              <legend>Before you sign</legend>
+              <p>Check the three things that make this usable at claim review.</p>
+              {checklist.map((item, index) => (
+                <label key={item} className="gate-check">
+                  <input
+                    type="checkbox"
+                    checked={checked.has(index)}
+                    onChange={() => toggleCheck(index)}
+                  />
+                  <span>{item}</span>
+                </label>
+              ))}
+            </fieldset>
+          )}
+
           {line.bucket === 'C' && (
             <button
               type="button"
               className="primary-action action-confirm"
-              onClick={() => onResolve(line.reason)}
+              onClick={() => onResolve(line)}
+              disabled={Boolean(action && checked.size !== checklist.length)}
             >
               {action?.kind === 'doctor_question'
                 ? 'Doctor answered and signed'

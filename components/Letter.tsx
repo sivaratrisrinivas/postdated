@@ -1,19 +1,20 @@
 'use client';
 
 import type { Disallowance, Forecast } from '@/lib/types';
-
-const INSURER = 'Niva Bupa Health Insurance Company Limited';
+import type { Policy } from '@/lib/policy';
 
 export interface LetterProps {
   forecast: Forecast;
   resolved: ReadonlySet<string>;
+  policy: Policy;
+  onLineSelect?: (line: Disallowance) => void;
 }
 
 /**
  * The product's hero artefact. It stays deliberately static in the forecast screen so the
  * user has one clear next decision: open the highest-value recoverable line beside it.
  */
-export function Letter({ forecast, resolved }: LetterProps) {
+export function Letter({ forecast, resolved, policy, onLineSelect }: LetterProps) {
   const live = forecast.lines.filter((line) => !resolved.has(line.reason));
   const disallowed = live.reduce((sum, line) => sum + line.amount, 0);
   const approved = forecast.claimed - disallowed;
@@ -23,12 +24,17 @@ export function Letter({ forecast, resolved }: LetterProps) {
       <Watermark />
 
       <div className="letter-inner">
-        <Letterhead date={forecast.letter_date} />
+        <Letterhead date={forecast.letter_date} policy={policy} />
         <Totals claimed={forecast.claimed} approved={approved} disallowed={disallowed} />
 
         <ul className="letter-lines">
           {forecast.lines.map((line) => (
-            <Line key={line.reason} line={line} struck={resolved.has(line.reason)} />
+            <Line
+              key={line.reason}
+              line={line}
+              struck={resolved.has(line.reason)}
+              onSelect={onLineSelect}
+            />
           ))}
         </ul>
 
@@ -48,25 +54,25 @@ function Watermark() {
   );
 }
 
-function Letterhead({ date }: { date: Date }) {
+function Letterhead({ date, policy }: { date: Date; policy: Policy }) {
   return (
     <header className="letter-head">
-      <p className="letter-head-name">{INSURER}</p>
+      <p className="letter-head-name">{policy.insurer}</p>
       <p className="letter-head-subtitle">Claims adjudication · Health reimbursement</p>
 
       <div className="letter-meta">
         <dl>
           <div className="letter-meta-row">
-            <dt>Claim no.</dt>
-            <dd>NB/BLR/2026/4471</dd>
+            <dt>Read no.</dt>
+            <dd>POSTDATED / SESSION-ONLY</dd>
           </div>
           <div className="letter-meta-row">
-            <dt>Insured</dt>
-            <dd>Ramachandra P., 71/M</dd>
+            <dt>Source</dt>
+            <dd>Discharge summary + final bill</dd>
           </div>
           <div className="letter-meta-row">
             <dt>Policy</dt>
-            <dd>ReAssure 2.0</dd>
+            <dd>{policy.product}</dd>
           </div>
         </dl>
 
@@ -115,42 +121,65 @@ function TotalRow({ label, value }: { label: string; value: number }) {
   );
 }
 
-function Line({ line, struck }: { line: Disallowance; struck: boolean }) {
+function Line({
+  line,
+  struck,
+  onSelect,
+}: {
+  line: Disallowance;
+  struck: boolean;
+  onSelect?: (line: Disallowance) => void;
+}) {
   const recoverable = line.bucket === 'C' && !struck;
+
+  const content = (
+    <span className="letter-line-content">
+      <span className="letter-line-marker" aria-hidden>
+        {struck ? (
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="m3.5 8.2 2.7 2.7 6.3-6.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        ) : (
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+          </svg>
+        )}
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="letter-line-amount">{rupees(line.amount)}</span>
+        <span className="letter-line-reason">{line.reason}</span>
+
+        {recoverable && (
+          <span className="letter-line-status">
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
+              <path d="m2.5 6.2 2 2 5-5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            Fixable now · tap for the exact ask
+          </span>
+        )}
+
+        {line.bucket === 'A' && (
+          <span className="letter-line-gone">This money is gone · tap to see the clause</span>
+        )}
+      </span>
+    </span>
+  );
 
   return (
     <li className={`letter-line ${struck ? 'is-struck' : ''}`}>
-      <div className="letter-line-content">
-        <span className="letter-line-marker" aria-hidden>
-          {struck ? (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="m3.5 8.2 2.7 2.7 6.3-6.4" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          ) : (
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="m4 4 8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-            </svg>
-          )}
-        </span>
-
-        <span className="min-w-0 flex-1">
-          <span className="letter-line-amount">{rupees(line.amount)}</span>
-          <span className="letter-line-reason">{line.reason}</span>
-
-          {recoverable && (
-            <span className="letter-line-status">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden>
-                <path d="m2.5 6.2 2 2 5-5" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              Fixable now
-            </span>
-          )}
-
-          {line.bucket === 'A' && (
-            <span className="letter-line-gone">This money is gone</span>
-          )}
-        </span>
-      </div>
+      {onSelect ? (
+        <button
+          type="button"
+          className="letter-line-button"
+          onClick={() => onSelect(line)}
+          aria-label={`Inspect ${line.reason}`}
+        >
+          {content}
+        </button>
+      ) : (
+        content
+      )}
     </li>
   );
 }
