@@ -519,7 +519,7 @@ Procedure: Open hernia repair with mesh.
 Course: Mobilised on the evening of surgery.
 Room: General ward, ₹2,400/day, 3 nights.
 Bill: Room rent ₹7,200; nursing ₹6,000; surgeon fees ₹19,000; OT ₹15,000; implants and mesh ₹22,000; pharmacy ₹14,000.
-Missing at discharge: Indoor case papers.
+Missing at discharge: Indoor case papers; implant invoice and sticker.
 Question for doctor: Why inpatient admission was required.`,
     statements: [
       'Right inguinal hernia',
@@ -535,7 +535,7 @@ Question for doctor: Why inpatient admission was required.`,
       line('pharmacy_consumables', 'Pharmacy', 14000),
     ],
     room: { category_as_billed: 'General ward', rate_per_day: 2400, nights: 3 },
-    missing: ['Indoor case papers'],
+    missing: ['Indoor case papers', 'Implant invoice and sticker'],
     guard: guards({
       feverNegation: 'No history of fever.',
       extra: [
@@ -546,7 +546,7 @@ Question for doctor: Why inpatient admission was required.`,
         },
       ],
     }),
-    resolution: indoorFix(),
+    resolution: indoorFix(['Indoor case papers', 'Implant invoice and sticker']),
   }),
   pack({
     id: 'case-22-pneumonia-negative',
@@ -978,7 +978,7 @@ Procedure: Total knee replacement.
 Implant: Cobalt chrome knee, batch KN-033.
 Course: Walking with a walker. Neurovascular status intact.
 Room: General ward, ₹3,200/day, 4 nights.
-Bill: Room rent ₹12,800; nursing ₹12,000; surgeon fees ₹40,000; OT ₹28,000; plate and screws ₹90,000; pharmacy ₹22,000.
+Bill: Room rent ₹12,800; nursing ₹12,000; surgeon fees ₹40,000; OT ₹28,000; cobalt-chrome TKR ₹90,000; pharmacy ₹22,000.
 Missing at discharge: Indoor case papers; implant invoice and sticker.
 Question for doctor: Why inpatient admission was required.`,
     statements: [
@@ -992,7 +992,7 @@ Question for doctor: Why inpatient admission was required.`,
       line('nursing', 'Nursing charges', 12000),
       line('practitioners_fees', 'Surgeon fees', 40000),
       line('operation_theatre', 'OT charges', 28000),
-      line('implants_devices', 'Plate and screws', 90000),
+      line('implants_devices', 'cobalt-chrome TKR', 90000),
       line('pharmacy_consumables', 'Pharmacy', 22000),
     ],
     room: { category_as_billed: 'General ward', rate_per_day: 3200, nights: 4 },

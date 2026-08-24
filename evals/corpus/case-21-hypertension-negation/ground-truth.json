@@ -47,7 +47,8 @@
       "nights": 3
     },
     "missing_documents": [
-      "Indoor case papers"
+      "Indoor case papers",
+      "Implant invoice and sticker"
     ],
     "unestablished": [
       "Why inpatient admission was required"
@@ -93,7 +94,8 @@
   ],
   "resolution": {
     "old_missing_documents": [
-      "Indoor case papers"
+      "Indoor case papers",
+      "Implant invoice and sticker"
     ],
     "old_unestablished": [
       "Why inpatient admission was required"
