@@ -16,8 +16,8 @@ export interface DemoCase {
 /**
  * These are deliberate demo entry points, not hidden production data. The first case is
  * the original hand-checked fixture; the other two are the public sample assets committed
- * with the repo. The image can take the live vision path, while the PDF is a preconfigured
- * print-ready case because browser-side PDF-to-image conversion is not part of this demo.
+ * with the repo. The JPG may attempt a live read when a key is set; an empty bill is not
+ * shown as a letter. The PDF is a preconfigured case because this demo does not do PDF vision.
  */
 export const DEMO_CASES: readonly DemoCase[] = [
   {

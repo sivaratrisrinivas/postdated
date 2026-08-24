@@ -25,6 +25,11 @@ export type LiveExtractionDecision =
   | { ok: true; extraction: Extraction; source: 'fixture_unreadable' }
   | { ok: false; status: 422; error: string };
 
+/** Empty or missing output is worth one more model call. A usable bill is not retried. */
+export function shouldRetryLiveRead(extraction: Extraction | null): boolean {
+  return extraction === null || !isUsableLiveExtraction(extraction);
+}
+
 /**
  * Demo cases may fall back to the committed extraction when the live page is empty.
  * A custom upload must fail instead of pretending the seeded bill was on that photo.

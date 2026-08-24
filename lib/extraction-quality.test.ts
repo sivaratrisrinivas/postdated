@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   decideLiveExtraction,
   isUsableLiveExtraction,
+  shouldRetryLiveRead,
   UNREADABLE_BILL_ERROR,
 } from './extraction-quality';
 import { SEEDED_EXTRACTION } from './fixture';
@@ -34,6 +35,12 @@ describe('isUsableLiveExtraction', () => {
 
   it('accepts the committed fixture', () => {
     expect(isUsableLiveExtraction(SEEDED_EXTRACTION)).toBe(true);
+  });
+
+  it('retries an empty high-confidence read once, not a usable bill', () => {
+    expect(shouldRetryLiveRead(null)).toBe(true);
+    expect(shouldRetryLiveRead(emptyHighConfidence)).toBe(true);
+    expect(shouldRetryLiveRead(SEEDED_EXTRACTION)).toBe(false);
   });
 
   it('does not invent charges to make an empty read look full', () => {

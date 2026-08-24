@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { decideLiveExtraction } from '@/lib/extraction-quality';
+import { decideLiveExtraction, shouldRetryLiveRead } from '@/lib/extraction-quality';
 import { SEEDED_EXTRACTION } from '@/lib/fixture';
 import type { ProcessTrace } from '@/lib/process';
 import { extractWithoutKey, hasLiveReaderKey, LIVE_READER } from '@/lib/reader';
@@ -103,7 +103,8 @@ Hard rules, in order of importance:
 2. clinical_statements are verbatim spans. Copy the characters off the page.
 3. unestablished is a list of things the record fails to establish. Phrase each so it becomes a question for the doctor. "Why inpatient admission was required" — not "Patient required inpatient admission for IV antibiotics".
 4. You do no arithmetic. Report bill amounts exactly as printed. Do not total them, do not compute a deduction, do not estimate what will be disallowed. Skip any printed TOTAL, SUBTOTAL or NET PAYABLE row — those are sums, not charges.
-5. If the photograph is unreadable in part, say so via confidence and omit the field. A confident wrong number is worse than a gap.
+5. If the photograph is unreadable in part, say so via confidence and omit only the unread field. A confident wrong number is worse than a gap.
+6. bill_lines are the printed charge rows. Copy every charge you can actually read. If you cannot read any charge row, bill_lines must be empty and confidence must be low. Never return confidence=high with an empty bill. Reading the room rate alone is not a bill.
 
 Be selective, not exhaustive. A discharge summary can be queried in twenty ways; a family standing at a counter with forty minutes can act on two or three. Return **at most three** missing_documents and **at most three** unestablished items, most consequential first — judged by how much money rides on each and whether it can still be obtained today. If the page has an explicit list such as "Missing at discharge", treat every listed item as evidence: copy each item faithfully and do not omit a secondary document just because a more common gap appears first. If the list says the bill is not fully itemised, preserve that as a request for the fully itemised bill.
 
@@ -130,63 +131,86 @@ export async function POST(request: Request) {
 
     const validatedAt = Date.now();
 
-    const modelStarted = Date.now();
-    const response = await fetch(LIVE_READER.apiUrl, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env[LIVE_READER.env]}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_completion_tokens: 4_096,
-        temperature: 0,
-        messages: [
-          { role: 'system', content: SYSTEM },
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${imagePayload.mediaType};base64,${image}`,
-                },
-              },
-              {
-                type: 'text',
-                text:
-                  'This is the discharge summary and final bill handed over at the counter. ' +
-                  'Extract it. Report what a TPA will find missing.',
-              },
-            ],
-          },
-        ],
-        response_format: {
-          type: 'json_schema',
-          json_schema: {
-            name: 'postdated_extraction',
-            strict: true,
-            schema: EXTRACTION_SCHEMA,
-          },
-        },
-      }),
-    });
-    const modelFinishedAt = Date.now();
+    let parsed: Extraction | null = null;
+    let modelCalls = 0;
+    let modelLatency = 0;
+    let lastEmpty = false;
+    let lastUsage: CerebrasResponse['usage'];
 
-    if (!response.ok) {
-      throw new Error(`${LIVE_READER.provider} returned HTTP ${response.status}`);
+    // One retry when the first pass is an empty high-confidence bill. Do not invent lines.
+    while (modelCalls < 2) {
+      const modelStarted = Date.now();
+      const response = await fetch(LIVE_READER.apiUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${process.env[LIVE_READER.env]}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: MODEL,
+          max_completion_tokens: 4_096,
+          temperature: 0,
+          messages: [
+            { role: 'system', content: SYSTEM },
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${imagePayload.mediaType};base64,${image}`,
+                  },
+                },
+                {
+                  type: 'text',
+                  text:
+                    'This is the discharge summary and final bill handed over at the counter. ' +
+                    'Extract it. Report what a TPA will find missing.' +
+                    (lastEmpty
+                      ? ' The previous pass returned no charge rows. Copy every printed charge you can actually read. Do not invent amounts.'
+                      : ''),
+                },
+              ],
+            },
+          ],
+          response_format: {
+            type: 'json_schema',
+            json_schema: {
+              name: 'postdated_extraction',
+              strict: true,
+              schema: EXTRACTION_SCHEMA,
+            },
+          },
+        }),
+      });
+      modelLatency += Date.now() - modelStarted;
+      modelCalls += 1;
+
+      if (!response.ok) {
+        throw new Error(`${LIVE_READER.provider} returned HTTP ${response.status}`);
+      }
+
+      const data = (await response.json()) as CerebrasResponse;
+      lastUsage = data.usage;
+      const text = data.choices?.[0]?.message?.content;
+      if (!text) {
+        lastEmpty = true;
+        parsed = null;
+        continue;
+      }
+
+      parsed = JSON.parse(text) as Extraction;
+      if (!shouldRetryLiveRead(parsed)) break;
+      lastEmpty = true;
     }
 
-    const data = (await response.json()) as CerebrasResponse;
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) {
+    if (!parsed) {
       if (allowFixture) {
         return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_no_text' });
       }
       return NextResponse.json({ error: 'The image reader returned no extraction.' }, { status: 502 });
     }
 
-    const parsed = JSON.parse(text) as Extraction;
     const decided = decideLiveExtraction(parsed, allowFixture);
     if (!decided.ok) {
       return NextResponse.json({ error: decided.error }, { status: decided.status });
@@ -195,11 +219,11 @@ export async function POST(request: Request) {
     const finishedAt = Date.now();
     const trace: ProcessTrace = {
       tool_calls: 0,
-      model_calls: 1,
+      model_calls: modelCalls,
       steps: [
         { name: 'input_validation', latency_ms: validatedAt - started },
-        { name: 'model_call', latency_ms: modelFinishedAt - modelStarted },
-        { name: 'response_parse', latency_ms: finishedAt - modelFinishedAt },
+        { name: 'model_call', latency_ms: modelLatency },
+        { name: 'response_parse', latency_ms: finishedAt - validatedAt - modelLatency },
       ],
       total_latency_ms: finishedAt - started,
     };
@@ -209,7 +233,7 @@ export async function POST(request: Request) {
       source: decided.source,
       latency_ms: finishedAt - started,
       trace,
-      usage: data.usage,
+      usage: lastUsage,
     });
   } catch (error) {
     if (allowFixture) {
