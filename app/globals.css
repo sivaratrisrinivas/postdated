@@ -1396,6 +1396,17 @@ summary:focus-visible {
   transform: translateX(0.2rem);
 }
 
+.capture-retry {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.capture-retry .inline-error {
+  margin: 0;
+}
+
 .inline-error {
   margin: 1rem 0 0;
   border: 1px solid color-mix(in srgb, var(--coral) 50%, var(--line));

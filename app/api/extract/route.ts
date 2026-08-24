@@ -211,7 +211,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'The image reader returned no extraction.' }, { status: 502 });
     }
 
-    const decided = decideLiveExtraction(parsed, allowFixture);
+    const decided = decideLiveExtraction(parsed);
     if (!decided.ok) {
       return NextResponse.json({ error: decided.error }, { status: decided.status });
     }

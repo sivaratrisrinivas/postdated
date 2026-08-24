@@ -18,6 +18,7 @@ import {
 import { isUsableLiveExtraction, UNREADABLE_BILL_ERROR } from '@/lib/extraction-quality';
 import { SEEDED_SUMMARY_TEXT } from '@/lib/fixture';
 import {
+  applySuccessfulInitialRead,
   applySuccessfulRescan,
   provenanceSource,
   shouldUseDemoFallback,
@@ -67,6 +68,13 @@ export default function Page() {
   );
 
   const applyInitialRead = useCallback((nextExtraction: Extraction, nextSource: ProvenanceSource, nextLatency: number | null) => {
+    const accepted = applySuccessfulInitialRead(nextExtraction);
+    if (!accepted.ok) {
+      setError(accepted.error);
+      setReading(false);
+      setStatus(accepted.status);
+      return;
+    }
     setExtraction(nextExtraction);
     setSource(nextSource);
     setLatency(nextLatency);
@@ -75,7 +83,7 @@ export default function Page() {
     setActiveLine(null);
     setError(null);
     setReading(false);
-    setStatus('ready');
+    setStatus(accepted.status);
   }, []);
 
   const applyRescan = useCallback(
@@ -88,6 +96,12 @@ export default function Page() {
         nextSource,
         nextLatency,
       });
+      if (!next.ok) {
+        setError(next.error);
+        setReading(false);
+        setStatus(next.status);
+        return;
+      }
       setExtraction(next.extraction);
       setSource(next.source);
       setLatency(next.latency);
@@ -480,9 +494,14 @@ function CaptureStage({
         </div>
 
         {error && (
-          <p className="inline-error" role="alert" aria-live="assertive">
-            {error}
-          </p>
+          <div className="capture-retry">
+            <p className="inline-error" role="alert" aria-live="assertive">
+              {error}
+            </p>
+            <button type="button" className="text-action" onClick={onPickCamera} disabled={busy}>
+              Try another photograph
+            </button>
+          </div>
         )}
 
         <p className="capture-explanation">
@@ -609,9 +628,14 @@ function RescanStage({
           Back to the forecast
         </button>
         {error && (
-          <p className="inline-error" role="alert" aria-live="assertive">
-            {error}
-          </p>
+          <div className="capture-retry">
+            <p className="inline-error" role="alert" aria-live="assertive">
+              {error}
+            </p>
+            <button type="button" className="text-action" onClick={onPick} disabled={busy}>
+              Try another photograph
+            </button>
+          </div>
         )}
       </div>
     </section>
