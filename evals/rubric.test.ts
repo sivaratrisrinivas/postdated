@@ -12,6 +12,7 @@ describe('evaluation rubric and review controls', () => {
     const ids = EVAL_RUBRIC.map((criterion) => criterion.id);
     expect(new Set(ids).size).toBe(ids.length);
     expect(EVAL_RUBRIC.every((criterion) => criterion.pass_example && criterion.fail_example)).toBe(true);
+    expect(ids).toContain('safety.usable_read');
   });
 
   it('does not claim human alignment from a tiny sample', () => {

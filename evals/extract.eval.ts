@@ -6,6 +6,9 @@ import { loadCorpus, type CasePack } from './corpus.ts';
 
 const jiti = createJiti(import.meta.url);
 const { evaluateLiveWorkflow } = (await jiti.import('../lib/evaluation.ts')) as typeof import('../lib/evaluation.ts');
+const { isUsableLiveExtraction } = (await jiti.import(
+  '../lib/extraction-quality.ts',
+)) as typeof import('../lib/extraction-quality.ts');
 const { NIVA_BUPA_REASSURE_2 } = (await jiti.import('../lib/policy.ts')) as typeof import('../lib/policy.ts');
 
 interface ExtractRow {
@@ -106,6 +109,13 @@ function scoreExtraction(
   const warnings: string[] = [];
 
   if (sourceKind !== 'live') failures.push(`route returned ${sourceKind}, not live`);
+  if (!isUsableLiveExtraction(actual)) {
+    failures.push(
+      actual.confidence === 'high' && actual.bill_lines.length === 0
+        ? 'high-confidence empty bill presented as a finished ₹0 letter'
+        : 'live extraction has no usable bill lines',
+    );
+  }
   if (moneyMatched !== moneyTotal) failures.push(`money ${moneyMatched}/${moneyTotal} exact`);
   if (roomChecks.some((check) => !check)) failures.push(`room fields ${roomChecks.filter(Boolean).length}/3 exact`);
   if (!missingDocumentsExact) warnings.push('missing documents do not exactly match');

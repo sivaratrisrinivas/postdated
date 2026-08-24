@@ -1,4 +1,5 @@
 import { computeForecast } from './deduct';
+import { isUsableLiveExtraction } from './extraction-quality';
 import { guard } from './guard';
 import type { Extraction, Forecast } from './types';
 import type { Policy } from './policy';
@@ -60,6 +61,12 @@ export function evaluateReferenceWorkflow(
     if (condition) phaseCounts[phase].passed += 1;
     if (!condition) failures.push(`${input.id} · ${name}: ${detail}`);
   };
+
+  check(
+    'usable read',
+    isUsableLiveExtraction(input.extraction),
+    'hand-written truth has no usable bill lines',
+  );
 
   const baseline = computeForecast(input.extraction, policy, EVALUATION_DATE);
   checkForecast(check, 'baseline deterministic contract', baseline);
@@ -215,6 +222,31 @@ export function evaluateLiveWorkflow(
     );
   }
 
+  const usable = isUsableLiveExtraction(actual);
+  check(
+    'live usable read',
+    usable,
+    actual.confidence === 'high' && actual.bill_lines.length === 0
+      ? 'high-confidence empty bill presented as a finished ₹0 letter'
+      : 'live extraction has no usable bill lines',
+  );
+
+  if (!usable) {
+    return {
+      id: input.id,
+      checks,
+      passed: checks - failures.length,
+      failures,
+      phasePassRates: passRates(phaseCounts),
+      baseline: {
+        claimed: 0,
+        approved: 0,
+        disallowed: 0,
+        recoverableLines: 0,
+      },
+    };
+  }
+
   const forecast = computeForecast(actual, policy, EVALUATION_DATE);
   checkForecast(check, 'live deterministic composition', forecast);
   for (const line of forecast.lines) {
@@ -329,6 +361,7 @@ function normalise(value: string): string {
 function phaseFor(name: string): string {
   const lower = name.toLowerCase();
   if (lower.includes('source grounding')) return 'source_grounding';
+  if (lower.includes('usable read')) return 'usable_read';
   if (lower.includes('guard') || lower.includes('negation')) return 'fabrication_guard';
   if (lower.includes('physical ask') || lower.includes('recoverable action')) return 'physical_action';
   if (lower.includes('resolution') || lower.includes('bucket a') || lower.includes('idempotence')) {
