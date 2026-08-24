@@ -133,26 +133,12 @@ export default function Page() {
     }
   }, [applyInitialRead, applyRescan]);
 
-  const runDemoCase = useCallback(async (id: DemoCaseId) => {
+  const runDemoCase = useCallback((id: DemoCaseId) => {
     const demoCase = demoCaseFor(id);
     setActiveDemoCase(demoCase);
     setError(null);
-    setReading(true);
-
-    if (demoCase.format !== 'image' || !demoCase.asset) {
-      applyInitialRead(demoCase.fallback, 'demo', null);
-      return;
-    }
-
-    try {
-      const response = await fetch(demoCase.asset);
-      if (!response.ok) throw new Error('The sample image is unavailable.');
-      const blob = await response.blob();
-      await capture(new File([blob], `${demoCase.id}.jpg`, { type: blob.type || 'image/jpeg' }), 'demo', demoCase);
-    } catch {
-      applyInitialRead(demoCase.fallback, 'demo', null);
-    }
-  }, [applyInitialRead, capture]);
+    applyInitialRead(demoCase.fallback, 'demo', null);
+  }, [applyInitialRead]);
 
   const loadPickedPolicy = useCallback(() => {
     setPolicy(NIVA_BUPA_REASSURE_2);

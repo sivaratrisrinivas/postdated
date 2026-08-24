@@ -59,12 +59,12 @@ The app keeps documents session-only and does not write clinical facts.
 
 ### Why there is an upload button
 
-The original fixture and the print-ready PDF use the committed extraction. The public JPG
-is a photograph of that same page: when `CEREBRAS_API_KEY` is set the server attempts a live
-read, but a high-confidence empty bill is treated as a failed read, not a ₹0 letter. The
-demo case then uses the committed extraction and says so. A custom camera/upload never
-gets that fallback — without a key, or when the page yields no bill, it fails and names
-the reason.
+All three demo cases use the same committed extraction. The public JPG is a photograph of
+that page, shown as a preview — it is not a live-vision case. A Cerebras read of it has
+returned a high-confidence empty bill; inventing line items to fill the letter would be
+worse. Live reading is the custom camera/upload path. Without `CEREBRAS_API_KEY`, or when
+the page yields no bill, that path fails and names the reason. It does not silently
+become the seeded case.
 
 The current browser path accepts one image at a time. The client compresses it to JPEG
 before upload. The server accepts JPEG or PNG only — that is what Cerebras image input

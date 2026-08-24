@@ -14,10 +14,10 @@ export interface DemoCase {
 }
 
 /**
- * These are deliberate demo entry points, not hidden production data. The first case is
- * the original hand-checked fixture; the other two are the public sample assets committed
- * with the repo. The JPG may attempt a live read when a key is set; an empty bill is not
- * shown as a letter. The PDF is a preconfigured case because this demo does not do PDF vision.
+ * These are deliberate demo entry points, not hidden production data. All three use the
+ * same committed extraction so a judge gets one letter per load. Live photograph reading
+ * is the custom camera/upload path. The public JPG is a preview of that page, not a
+ * live-vision case — a Cerebras read of it has returned an empty high-confidence bill.
  */
 export const DEMO_CASES: readonly DemoCase[] = [
   {
@@ -30,7 +30,7 @@ export const DEMO_CASES: readonly DemoCase[] = [
   {
     id: 'photo',
     title: 'Public photo sample',
-    description: `Public JPG · live read only if a bill is visible; otherwise the committed extraction`,
+    description: 'Public JPG · committed extraction · same letter as the fixture',
     asset: '/samples/discharge-summary-photo.jpg',
     format: 'image',
     fallback: SEEDED_EXTRACTION,
@@ -47,6 +47,11 @@ export const DEMO_CASES: readonly DemoCase[] = [
 
 export function demoCaseFor(id: DemoCaseId): DemoCase {
   return DEMO_CASES.find((demoCase) => demoCase.id === id) ?? DEMO_CASES[0];
+}
+
+/** Committed demo buttons never call the live reader. Custom camera/upload still can. */
+export function usesLiveExtract(demoCase: DemoCase): boolean {
+  return demoCase.id !== 'seeded' && demoCase.id !== 'photo' && demoCase.id !== 'pdf';
 }
 
 /**

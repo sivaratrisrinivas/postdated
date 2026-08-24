@@ -20,8 +20,8 @@ file.
 |---|---|---|
 | **0:00–0:10** | Tap **Niva Bupa · ReAssure 2.0**. | Policy loaded. |
 | **0:10–0:20** | Read the SMS aloud. *"₹1,73,000 disallowed."* Three weeks after discharge. File closed, doctor on leave. | — |
-| **0:20–0:35** | Choose **Original worked case** or **Print-ready sample**. **Public photo sample** attempts a live read when `CEREBRAS_API_KEY` is set; if the page yields no bill, it uses the committed extraction and says so. | Reading the page… |
-| **0:35–1:10** | Say nothing if it is a live read (~13s). Then read the provenance line aloud. | Letter. **03 Sept 2026** at the top. **₹1,73,000** in red. Five lines. *"Read live from the photograph"* or *"Preconfigured demo case"*. |
+| **0:20–0:35** | Choose **Original worked case**, **Public photo sample**, or **Print-ready sample**. All three are the committed extraction. | Letter. |
+| **0:35–1:10** | Read the provenance line aloud: *"Preconfigured demo case."* | Letter. **03 Sept 2026** at the top. **₹1,73,000** in red. Five lines. |
 | **1:10–1:25** | Tap **₹85,000 — Indoor case papers not submitted**. Switch to **ಕನ್ನಡ**. Hold the phone up to your "ward clerk". | The Kannada ask, one instruction, large. |
 | **1:25–1:40** | Check the three **Before you sign** boxes, then confirm **The ward handed it over**. | The app asks for the amended page. |
 | **1:40–1:55** | Tap **Run the amended demo scan**. | **₹1,73,000 → ₹88,000.** Approved rises to **₹1,52,000**. The ₹85,000 line goes green. **Open the fix** is still there for the ₹40,000 admission line; a second scan takes the letter to **₹48,000**. |

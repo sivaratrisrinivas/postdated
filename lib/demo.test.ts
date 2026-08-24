@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { amendDemoExtraction, DEMO_CASES } from './demo';
+import { amendDemoExtraction, DEMO_CASES, usesLiveExtract } from './demo';
 import { SEEDED_EXTRACTION } from './fixture';
 import { computeForecast } from './deduct';
 import { NIVA_BUPA_REASSURE_2 } from './policy';
@@ -9,6 +9,13 @@ describe('demo cases', () => {
     expect(DEMO_CASES.map((demoCase) => demoCase.id)).toEqual(['seeded', 'photo', 'pdf']);
     expect(DEMO_CASES[1].asset).toBe('/samples/discharge-summary-photo.jpg');
     expect(DEMO_CASES[2].asset).toBe('/samples/discharge-summary.pdf');
+  });
+
+  it('does not send any demo case through the live reader', () => {
+    for (const demoCase of DEMO_CASES) {
+      expect(usesLiveExtract(demoCase)).toBe(false);
+      expect(demoCase.fallback).toEqual(SEEDED_EXTRACTION);
+    }
   });
 
   it('removes the action source from the amended demo read', () => {
