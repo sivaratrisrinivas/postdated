@@ -12,7 +12,9 @@ export const LIVE_READER = {
   apiUrl: 'https://api.cerebras.ai/v1/chat/completions',
 } as const;
 
-export function hasLiveReaderKey(env: NodeJS.ProcessEnv = process.env): boolean {
+export function hasLiveReaderKey(
+  env: Record<string, string | undefined> = process.env,
+): boolean {
   return Boolean(env[LIVE_READER.env]);
 }
 
