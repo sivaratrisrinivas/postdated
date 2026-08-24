@@ -46,7 +46,7 @@ describe('isUsableLiveExtraction', () => {
 
 describe('decideLiveExtraction', () => {
   it('returns 422 after retry when bill_lines is still empty at high confidence', () => {
-    const decision = decideLiveExtraction({ bill_lines: [], confidence: 'high', ...emptyHighConfidence });
+    const decision = decideLiveExtraction({ ...emptyHighConfidence, bill_lines: [], confidence: 'high' });
     expect(decision.ok).toBe(false);
     if (decision.ok) throw new Error('empty high-confidence bill must not pass');
     expect(decision.status).toBe(422);
