@@ -397,7 +397,11 @@ function PolicyStage({
           <span className="policy-choice-note">JPG / PNG</span>
         </button>
 
-        {error && <p className="inline-error" role="alert">{error}</p>}
+        {error && (
+          <p className="inline-error" role="alert" aria-live="assertive">
+            {error}
+          </p>
+        )}
 
         <p className="policy-footnote">
           POSTDATED does not guess an insurer from a bill. Load the rule first, then read the
@@ -485,6 +489,12 @@ function CaptureStage({
           </button>
         </div>
 
+        {error && (
+          <p className="inline-error" role="alert" aria-live="assertive">
+            {error}
+          </p>
+        )}
+
         <p className="capture-explanation">
           Use the rear camera when the paper is at the counter, or choose a photo already on the
           device. A custom photo is read live by {LIVE_READER.provider} ({LIVE_READER.model}) and
@@ -528,8 +538,6 @@ function CaptureStage({
             ))}
           </div>
         </div>
-
-        {error && <p className="inline-error" role="alert">{error}</p>}
 
         <p className="privacy-note">
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden>
@@ -610,7 +618,11 @@ function RescanStage({
           </svg>
           Back to the forecast
         </button>
-        {error && <p className="inline-error" role="alert">{error}</p>}
+        {error && (
+          <p className="inline-error" role="alert" aria-live="assertive">
+            {error}
+          </p>
+        )}
       </div>
     </section>
   );
