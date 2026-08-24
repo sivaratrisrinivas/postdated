@@ -2,10 +2,9 @@
  * Venue wifi kills demos (§7 stack notes), so a 12-megapixel phone photo never goes up
  * the wire at full size.
  *
- * 2576px on the long edge is not an arbitrary shrink — it is exactly the resolution
- * Claude Opus 5's vision stack uses. Below it you lose 9pt type; above it you pay for
- * pixels the model discards. So this both cuts the upload and keeps every readable
- * character of a photographed discharge summary.
+ * 2576px on the long edge keeps 9pt type readable on a photographed A4 page without
+ * sending a 12-megapixel file. The live Cerebras path accepts JPEG or PNG only, so
+ * this always emits JPEG.
  */
 const MAX_EDGE = 2576;
 const QUALITY = 0.85;

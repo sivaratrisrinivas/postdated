@@ -21,4 +21,18 @@ describe('demo cases', () => {
       SEEDED_EXTRACTION.missing_documents.length + SEEDED_EXTRACTION.unestablished.length - 1,
     );
   });
+
+  it('clears a live-phrased indoor-case-papers line by exposure, not string equality', () => {
+    const livePhrased = {
+      ...SEEDED_EXTRACTION,
+      missing_documents: ['Indoor case papers (day-by-day nursing and treatment record)'],
+    };
+    const forecast = computeForecast(livePhrased, NIVA_BUPA_REASSURE_2);
+    const actionLine = forecast.lines.find((line) => line.reason.includes('Indoor case papers'));
+    if (!actionLine) throw new Error('live-phrased indoor papers should still produce a line');
+
+    const amended = amendDemoExtraction(livePhrased, actionLine);
+    expect(amended.missing_documents).toEqual([]);
+    expect(amended.unestablished).toEqual(SEEDED_EXTRACTION.unestablished);
+  });
 });

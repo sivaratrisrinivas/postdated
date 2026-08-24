@@ -4,7 +4,7 @@
  *
  * These are what the TPA *asserts* is unsubstantiated when a document is missing. They
  * are not derived by us and they are never emitted by the model — a rupee figure from
- * Claude would violate the architectural line in CONTEXT.md. In a real implementation
+ * the photograph reader would violate the architectural line in CONTEXT.md. In a real implementation
  * each figure would be the residual of the bill heads that document substantiates, read
  * off the payer's own prior decisions for that hospital.
  *

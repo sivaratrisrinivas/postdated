@@ -5,7 +5,11 @@
 > Written so a fresh session with zero prior context can pick it up and build, pitch, or critique it.
 > Nothing here depends on the earlier conversation.
 
-**Status:** concept + build plan, not yet built.
+**Status:** original hackathon brief. The running app is built; this file is the concept, not the
+stack card.
+**Shipped reader:** Cerebras Chat Completions, model `gemma-4-31b`, env `CEREBRAS_API_KEY`.
+Arithmetic stays in `lib/deduct.ts`. Sections below still say "Claude" because that was the
+planned model on 8 Aug 2026. The product does not call Anthropic.
 **One line:** *We send you the insurance rejection letter three weeks before the insurer does — while the doctor is still in the building and the paperwork can still be fixed.*
 
 ---

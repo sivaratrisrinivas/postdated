@@ -17,6 +17,13 @@ describe('validateImagePayload', () => {
     });
   });
 
+  it('rejects WebP because the live Cerebras reader accepts JPEG and PNG only', () => {
+    expect(validateImagePayload('aGVsbG8=', 'image/webp')).toEqual({
+      ok: false,
+      error: 'unsupported image type',
+    });
+  });
+
   it('rejects malformed base64 instead of forwarding it to the provider', () => {
     expect(validateImagePayload('not base64!', 'image/jpeg')).toEqual({
       ok: false,

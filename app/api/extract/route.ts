@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { SEEDED_EXTRACTION } from '@/lib/fixture';
 import type { ProcessTrace } from '@/lib/process';
+import { extractWithoutKey, hasLiveReaderKey, LIVE_READER } from '@/lib/reader';
 import type { Extraction } from '@/lib/types';
 import { validateImagePayload } from '@/lib/upload-validation';
 
@@ -11,9 +12,7 @@ import { validateImagePayload } from '@/lib/upload-validation';
  * The API key stays on this side. It is never sent to the browser.
  */
 
-// Cerebras' public preview exposes image inputs on this model.
-const MODEL = 'gemma-4-31b';
-const CEREBRAS_API_URL = 'https://api.cerebras.ai/v1/chat/completions';
+const MODEL = LIVE_READER.model;
 
 const HEADS = [
   'room_rent',
@@ -120,25 +119,21 @@ export async function POST(request: Request) {
 
     const imagePayload = validateImagePayload(image, media_type);
     if (!imagePayload.ok) return NextResponse.json({ error: imagePayload.error }, { status: 400 });
-    if (!process.env.CEREBRAS_API_KEY) {
-      if (allowFixture) {
-        // Only preconfigured demo cases may use the committed fixture. A custom upload
-        // must never look successfully read when the live provider is not configured.
-        return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: 'fixture_no_key' });
+    if (!hasLiveReaderKey()) {
+      const withoutKey = extractWithoutKey(allowFixture);
+      if (withoutKey.kind === 'fixture') {
+        return NextResponse.json({ extraction: SEEDED_EXTRACTION, source: withoutKey.source });
       }
-      return NextResponse.json(
-        { error: 'Live image reading is not configured. Add CEREBRAS_API_KEY and try again.' },
-        { status: 503 },
-      );
+      return NextResponse.json({ error: withoutKey.error }, { status: withoutKey.status });
     }
 
     const validatedAt = Date.now();
 
     const modelStarted = Date.now();
-    const response = await fetch(CEREBRAS_API_URL, {
+    const response = await fetch(LIVE_READER.apiUrl, {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${process.env.CEREBRAS_API_KEY}`,
+        Authorization: `Bearer ${process.env[LIVE_READER.env]}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -151,16 +146,16 @@ export async function POST(request: Request) {
             role: 'user',
             content: [
               {
-                type: 'text',
-                text:
-                  'This is the discharge summary and final bill handed over at the counter. ' +
-                  'Extract it. Report what a TPA will find missing.',
-              },
-              {
                 type: 'image_url',
                 image_url: {
                   url: `data:${imagePayload.mediaType};base64,${image}`,
                 },
+              },
+              {
+                type: 'text',
+                text:
+                  'This is the discharge summary and final bill handed over at the counter. ' +
+                  'Extract it. Report what a TPA will find missing.',
               },
             ],
           },
@@ -178,7 +173,7 @@ export async function POST(request: Request) {
     const modelFinishedAt = Date.now();
 
     if (!response.ok) {
-      throw new Error(`Cerebras returned HTTP ${response.status}`);
+      throw new Error(`${LIVE_READER.provider} returned HTTP ${response.status}`);
     }
 
     const data = (await response.json()) as CerebrasResponse;

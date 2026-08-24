@@ -20,11 +20,11 @@ file.
 |---|---|---|
 | **0:00–0:10** | Tap **Niva Bupa · ReAssure 2.0**. | Policy loaded. |
 | **0:10–0:20** | Read the SMS aloud. *"₹1,73,000 disallowed."* Three weeks after discharge. File closed, doctor on leave. | — |
-| **0:20–0:35** | Choose **Public photo sample** or photograph the printed summary. | Reading the page… |
-| **0:35–1:10** | Say nothing for ~13 seconds. Let it render. Then read the provenance line aloud: *"read live from the photograph."* | Letter. **03 Sept 2026** at the top. **₹1,73,000** in red. Five lines. |
+| **0:20–0:35** | Choose **Public photo sample** (live read when `CEREBRAS_API_KEY` is set) or **Original worked case**. | Reading the page… |
+| **0:35–1:10** | Say nothing if it is a live read (~13s). Then read the provenance line aloud. | Letter. **03 Sept 2026** at the top. **₹1,73,000** in red. Five lines. *"Read live from the photograph"* or *"Preconfigured demo case"*. |
 | **1:10–1:25** | Tap **₹85,000 — Indoor case papers not submitted**. Switch to **ಕನ್ನಡ**. Hold the phone up to your "ward clerk". | The Kannada ask, one instruction, large. |
 | **1:25–1:40** | Check the three **Before you sign** boxes, then confirm **The ward handed it over**. | The app asks for the amended page. |
-| **1:40–1:55** | Tap **Run the amended demo scan**. | **₹1,73,000 → ₹88,000.** Approved rises to **₹1,52,000**. The ₹85,000 line goes green and strikes through. |
+| **1:40–1:55** | Tap **Run the amended demo scan**. | Final-result screen. **₹1,73,000 → ₹88,000.** Approved rises to **₹1,52,000**. The ₹85,000 line goes green and strikes through. |
 | **1:50–2:10** | The honesty beat. Read it off the coverage panel. | 4 / 12 / 8 |
 | **2:10–2:40** | Scroll to the guard. Ask a judge for a clinical fact. Tap their phrase or type it. | **BLOCKED**, the term named, converted to ASK THE DOCTOR. |
 | **2:40–3:00** | ₹40 per pre-auth file. 70,000+ private hospitals. One buyer, named. | Static mock — spoken, not built. |
@@ -79,11 +79,11 @@ what "etc." means, and that choice would be the arithmetic.
 > "The published awards run 2004 to 2014. Nothing after about 2016 exists to read."
 
 **The architecture line, while the letter is on screen:**
-> "The arithmetic never touches the model. Claude reads the photograph. A deterministic
+> "The arithmetic never touches the model. Cerebras reads the photograph. A deterministic
 > function computes every rupee, and the insurer's clause is quotable next to the code."
 
 **Calibration, unprompted:**
-> "This is Claude reasoning like a TPA medical officer, not a model trained on real
+> "This is a model reasoning like a TPA medical officer, not a model trained on real
 > approve/deny pairs — the payers hold those. Our false-green rate is unmeasured, and
 > we say so."
 
@@ -105,8 +105,8 @@ what "etc." means, and that choice would be the arithmetic.
 | Failure | Do this |
 |---|---|
 | Camera won't open | Tap **Original worked case**. Say: "this is the hand-checked case; the photo and custom upload paths use the same forecast code." |
-| Extraction slow or wrong | It already fell back to the fixture — the letter is on screen either way. Keep going. Do not mention it unless the provenance dot is amber and someone asks; then say "seeded case, and the read is the same code path." |
-| No network at all | Seeded case works with no network once the page is loaded. |
+| Live read slow, wrong, or unconfigured | Do **not** pretend a custom photo became the seeded case. Run **Original worked case** or **Print-ready sample**. If someone asks, say the live path needs `CEREBRAS_API_KEY` on the server. |
+| No network at all | Seeded and print-ready cases work with no network once the page is loaded. |
 | Guard misbehaves on a judge's phrase | Tap one of the three chips instead. §14 permits demonstrating the rule on a known phrase. |
 | A judge says "fever is right there on the page" | **This is the best question you will get.** The record says *"No history of fever or jaundice."* The guard reads negation — it quotes that sentence back at you on screen. Point at it. |
 

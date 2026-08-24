@@ -16,20 +16,28 @@ import {
   type DemoCaseId,
 } from '@/lib/demo';
 import { SEEDED_SUMMARY_TEXT } from '@/lib/fixture';
+import {
+  applySuccessfulRescan,
+  provenanceSource,
+  shouldUseDemoFallback,
+  stageFor,
+  withGreyedLines,
+  type CaptureMode,
+  type JourneyStage,
+  type JourneyStatus,
+  type ProvenanceSource,
+} from '@/lib/journey';
 import { NIVA_BUPA_REASSURE_2, type Policy } from '@/lib/policy';
+import { LIVE_READER } from '@/lib/reader';
 import type { Disallowance, Extraction } from '@/lib/types';
 
-type Status = 'idle' | 'reading' | 'ready' | 'rescan' | 'complete';
-type Source = 'live' | 'fixture' | 'demo';
-type Stage = 'policy' | 'capture' | 'forecast' | 'action' | 'rescan' | 'complete';
-type CaptureMode = 'custom' | 'demo' | 'rescan';
-
 export default function Page() {
-  const [status, setStatus] = useState<Status>('idle');
+  const [status, setStatus] = useState<JourneyStatus>('idle');
+  const [reading, setReading] = useState(false);
   const [policy, setPolicy] = useState<Policy | null>(null);
   const [policyBusy, setPolicyBusy] = useState(false);
   const [extraction, setExtraction] = useState<Extraction | null>(null);
-  const [source, setSource] = useState<Source>('demo');
+  const [source, setSource] = useState<ProvenanceSource>('demo');
   const [latency, setLatency] = useState<number | null>(null);
   const [resolved, setResolved] = useState<ReadonlySet<string>>(new Set());
   const [resolvedLines, setResolvedLines] = useState<readonly Disallowance[]>([]);
@@ -46,14 +54,10 @@ export default function Page() {
     [extraction, policy],
   );
 
-  const displayForecast = useMemo(() => {
-    if (!forecast) return null;
-    const currentReasons = new Set(forecast.lines.map((line) => line.reason));
-    const greyedLines = resolvedLines.filter((line) => !currentReasons.has(line.reason));
-    return greyedLines.length > 0
-      ? { ...forecast, lines: [...forecast.lines, ...greyedLines] }
-      : forecast;
-  }, [forecast, resolvedLines]);
+  const displayForecast = useMemo(
+    () => (forecast ? withGreyedLines(forecast, resolvedLines) : null),
+    [forecast, resolvedLines],
+  );
 
   const nextFix = useMemo(
     () =>
@@ -61,7 +65,7 @@ export default function Page() {
     [forecast, resolved],
   );
 
-  const applyInitialRead = useCallback((nextExtraction: Extraction, nextSource: Source, nextLatency: number | null) => {
+  const applyInitialRead = useCallback((nextExtraction: Extraction, nextSource: ProvenanceSource, nextLatency: number | null) => {
     setExtraction(nextExtraction);
     setSource(nextSource);
     setLatency(nextLatency);
@@ -69,36 +73,36 @@ export default function Page() {
     setResolvedLines([]);
     setActiveLine(null);
     setError(null);
+    setReading(false);
     setStatus('ready');
   }, []);
 
   const applyRescan = useCallback(
-    (nextExtraction: Extraction, nextSource: Source, nextLatency: number | null) => {
+    (nextExtraction: Extraction, nextSource: ProvenanceSource, nextLatency: number | null) => {
       if (!policy) return;
-      const nextForecast = computeForecast(nextExtraction, policy);
-      const resolvedHistory = resolvedLines.filter(
-        (oldLine) => !nextForecast.lines.some((newLine) => equivalentLine(oldLine, newLine)),
-      );
-      const nextResolved = new Set(resolvedHistory.map((line) => line.reason));
-      const stillOpen = nextForecast.lines.some(
-        (line) => line.bucket === 'C' && !nextResolved.has(line.reason),
-      );
-
-      setExtraction(nextExtraction);
-      setSource(nextSource);
-      setLatency(nextLatency);
-      setResolvedLines(resolvedHistory);
-      setResolved(nextResolved);
+      const next = applySuccessfulRescan({
+        nextExtraction,
+        policy,
+        resolvedLines,
+        nextSource,
+        nextLatency,
+      });
+      setExtraction(next.extraction);
+      setSource(next.source);
+      setLatency(next.latency);
+      setResolvedLines(next.resolvedLines);
+      setResolved(new Set(next.resolved));
       setActiveLine(null);
       setError(null);
-      setStatus(stillOpen ? 'ready' : 'complete');
+      setReading(false);
+      setStatus(next.status);
     },
     [policy, resolvedLines],
   );
 
   const capture = useCallback(async (file: File, mode: CaptureMode, demoCase?: DemoCase) => {
     setError(null);
-    setStatus('reading');
+    setReading(true);
     const started = Date.now();
     try {
       const { base64, media_type } = await compressForUpload(file);
@@ -107,19 +111,20 @@ export default function Page() {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ image: base64, media_type, allow_fixture: mode === 'demo' }),
       });
-      const data = await res.json();
+      const data = await res.json() as { extraction?: Extraction; error?: string; source?: string; latency_ms?: number };
       if (!res.ok || !data.extraction) throw new Error(data.error ?? 'The image could not be read.');
-      const nextSource: Source = data.source === 'live' ? 'live' : 'fixture';
+      const nextSource = provenanceSource(data.source, mode);
       const nextLatency = data.latency_ms ?? Date.now() - started;
       if (mode !== 'demo') setActiveDemoCase(null);
       if (mode === 'rescan') applyRescan(data.extraction, nextSource, nextLatency);
       else applyInitialRead(data.extraction, nextSource, nextLatency);
     } catch (readError) {
-      if (mode === 'demo' && demoCase) {
+      if (shouldUseDemoFallback(mode) && demoCase) {
         applyInitialRead(demoCase.fallback, 'demo', null);
         return;
       }
       setError(readError instanceof Error ? readError.message : 'The image could not be read.');
+      setReading(false);
       setStatus(mode === 'rescan' ? 'rescan' : 'idle');
     }
   }, [applyInitialRead, applyRescan]);
@@ -128,7 +133,7 @@ export default function Page() {
     const demoCase = demoCaseFor(id);
     setActiveDemoCase(demoCase);
     setError(null);
-    setStatus('reading');
+    setReading(true);
 
     if (demoCase.format !== 'image' || !demoCase.asset) {
       applyInitialRead(demoCase.fallback, 'demo', null);
@@ -187,6 +192,7 @@ export default function Page() {
 
   const startFresh = useCallback(() => {
     setStatus('idle');
+    setReading(false);
     setExtraction(null);
     setSource('demo');
     setLatency(null);
@@ -199,17 +205,11 @@ export default function Page() {
     if (browseInput.current) browseInput.current.value = '';
   }, []);
 
-  const stage: Stage = !policy
-    ? 'policy'
-    : activeLine
-      ? 'action'
-      : status === 'rescan'
-        ? 'rescan'
-        : status === 'complete'
-          ? 'complete'
-          : status === 'ready'
-            ? 'forecast'
-            : 'capture';
+  const stage = stageFor({
+    hasPolicy: Boolean(policy),
+    hasActiveLine: Boolean(activeLine),
+    status,
+  });
 
   return (
     <main className="site-shell">
@@ -227,7 +227,7 @@ export default function Page() {
 
       {stage === 'capture' && (
         <CaptureStage
-          busy={status === 'reading'}
+          busy={reading}
           error={error}
           onPickCamera={() => fileInput.current?.click()}
           onPickExisting={() => browseInput.current?.click()}
@@ -296,15 +296,13 @@ export default function Page() {
           nextFix={nextFix}
           onOpenNextFix={openNextFix}
           onOpenLine={setActiveLine}
-          onPick={() => fileInput.current?.click()}
-          onChoose={() => browseInput.current?.click()}
           onStartFresh={startFresh}
         />
       )}
 
       {stage === 'rescan' && extraction && activeDemoCase && (
         <RescanStage
-          busy={status === 'reading'}
+          busy={reading}
           error={error}
           onPick={() => fileInput.current?.click()}
           onChoose={() => browseInput.current?.click()}
@@ -318,7 +316,7 @@ export default function Page() {
 
       {stage === 'rescan' && extraction && !activeDemoCase && (
         <RescanStage
-          busy={status === 'reading'}
+          busy={reading}
           error={error}
           onPick={() => fileInput.current?.click()}
           onChoose={() => browseInput.current?.click()}
@@ -343,13 +341,6 @@ export default function Page() {
         <AskSheet line={activeLine} onResolve={resolve} onClose={() => setActiveLine(null)} />
       )}
     </main>
-  );
-}
-
-function equivalentLine(left: Disallowance, right: Disallowance): boolean {
-  return (
-    left.reason === right.reason ||
-    (left.action?.kind === right.action?.kind && left.action?.ask === right.action?.ask)
   );
 }
 
@@ -393,7 +384,7 @@ function PolicyStage({
         <button type="button" className="policy-choice" onClick={onPickPhoto} disabled={busy}>
           <span>
             <strong>{busy ? 'Reading the policy page…' : 'Photograph a policy page'}</strong>
-            <small>Live policy extraction · requires the Cerebras key</small>
+            <small>Live {LIVE_READER.provider} read · needs {LIVE_READER.env}</small>
           </span>
           <span className="policy-choice-note">JPG / PNG</span>
         </button>
@@ -401,7 +392,7 @@ function PolicyStage({
         <button type="button" className="policy-choice" onClick={onPickExisting} disabled={busy}>
           <span>
             <strong>Choose an existing policy photo</strong>
-            <small>Use a page already saved on this device</small>
+            <small>Same live reader · fails clearly without {LIVE_READER.env}</small>
           </span>
           <span className="policy-choice-note">JPG / PNG</span>
         </button>
@@ -421,7 +412,7 @@ function SiteNav({
   stage,
   onStartFresh,
 }: {
-  stage: Stage;
+  stage: JourneyStage;
   onStartFresh: () => void;
 }) {
   return (
@@ -496,8 +487,10 @@ function CaptureStage({
 
         <p className="capture-explanation">
           Use the rear camera when the paper is at the counter, or choose a photo already on the
-          device. The live reader currently accepts one image at a time. For a reliable tour, run
-          one of the three committed demo cases below.
+          device. A custom photo is read live by {LIVE_READER.provider} ({LIVE_READER.model}) and
+          needs {LIVE_READER.env} on the server. Without that key the upload fails with an error —
+          it does not silently become the seeded case. The three committed demo cases below still
+          complete without a key.
         </p>
 
         <div className="demo-case-area">
@@ -633,21 +626,17 @@ function ForecastStage({
   nextFix,
   onOpenNextFix,
   onOpenLine,
-  onPick,
-  onChoose,
   onStartFresh,
 }: {
   forecast: ReturnType<typeof computeForecast>;
   extraction: Extraction;
   resolved: ReadonlySet<string>;
   policy: Policy;
-  source: Source;
+  source: ProvenanceSource;
   latency: number | null;
   nextFix: Disallowance | null;
   onOpenNextFix: () => void;
   onOpenLine: (line: Disallowance) => void;
-  onPick: () => void;
-  onChoose: () => void;
   onStartFresh: () => void;
 }) {
   return (
@@ -726,12 +715,6 @@ function ForecastStage({
             </div>
           </details>
 
-          <button type="button" className="text-action" onClick={onPick}>
-            Scan an amended summary
-          </button>
-          <button type="button" className="text-action" onClick={onChoose}>
-            Choose an amended photo
-          </button>
         </aside>
       </div>
     </section>
@@ -752,7 +735,7 @@ function CompletionStage({
   resolved: ReadonlySet<string>;
   policy: Policy;
   resolvedLines: readonly Disallowance[];
-  source: Source;
+  source: ProvenanceSource;
   latency: number | null;
   onOpenLine: (line: Disallowance) => void;
   onStartFresh: () => void;
@@ -803,7 +786,7 @@ function CompletionStage({
   );
 }
 
-function Provenance({ source, latency }: { source: Source; latency: number | null }) {
+function Provenance({ source, latency }: { source: ProvenanceSource; latency: number | null }) {
   const label =
     source === 'live'
       ? 'Read live from the photograph'
