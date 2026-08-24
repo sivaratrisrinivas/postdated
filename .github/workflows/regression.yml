@@ -19,4 +19,5 @@ jobs:
       - run: npx tsc --noEmit
       - run: npm run lint
       - run: npm run build
-      - run: npm run eval
+      - name: Run 40-case eval harness
+        run: npm run eval

@@ -3,9 +3,13 @@
 This harness measures the claims the hackathon demo is allowed to make. It does not
 produce one flattering headline score.
 
-All ten case packs are fictional. They are synthetic documents, synthetic bills, and
+All forty case packs are fictional. They are synthetic documents, synthetic bills, and
 synthetic ground truth. Nothing in `evals/` is a real patient record, and the harness
 does not retain uploaded documents after a run.
+
+The corpus keeps the original 10-case split: 16 safety cases, 12 deterministic-money
+cases, and 12 end-to-end workflow cases. Every pack still runs through every offline
+gate. The labels describe what the case is for, not a separate score.
 
 ## Evaluation design from first principles
 
@@ -130,7 +134,8 @@ Each folder contains:
 
 The cases deliberately include negated symptoms, a handwritten note, missing indoor case
 papers, a room above the schedule limit, non-payable consumables, an under-24-hour stay,
-an unreadable section, an affirmed fever, an implant-document gap, and a mixed case.
+an unreadable section, an affirmed fever, an implant-document gap, a mixed case, and
+thirty further handwritten variants that keep the same safety / money / workflow split.
 
 ## Metrics
 
@@ -162,7 +167,7 @@ text, and unsafe confidence.
 
 ## What a stronger evaluation needs next
 
-The ten-case harness is a good deterministic release gate, but it is not a calibration study.
+The forty-case harness is a deterministic release gate, not a calibration study.
 Keep these as separate tracks rather than inventing one headline score:
 
 1. **Safety gate:** zero unsupported clinical statements, zero unsafe high-confidence reads on
@@ -185,6 +190,7 @@ still not a calibration study: the model may be useful and safe on these cases w
 deny/approve probability remains unknown.
 
 The regression workflow in `.github/workflows/regression.yml` runs tests, type-checking, lint,
-production build, and the offline eval on every push and pull request. Live extraction remains an
-explicit opt-in because it consumes provider quota; when the key and dev server are available,
-`npm run eval` adds that live gate.
+production build, and the 40-case offline eval on every push and pull request. The eval step
+fails the job if any safety, money, or workflow gate fails, or if the corpus shrinks. Live
+extraction remains an explicit opt-in because it consumes provider quota; when the key and
+dev server are available, `npm run eval` adds that live gate.

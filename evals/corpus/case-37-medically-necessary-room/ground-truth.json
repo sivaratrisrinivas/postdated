@@ -1,0 +1,95 @@
+{
+  "id": "case-37-medically-necessary-room",
+  "title": "The deluxe room necessity question is unestablished",
+  "input_image": "input.png",
+  "extraction": {
+    "clinical_statements": [
+      "Right ovarian cyst",
+      "No history of fever or jaundice",
+      "Laparoscopic cystectomy"
+    ],
+    "bill_lines": [
+      {
+        "head": "room_rent",
+        "label": "Room rent",
+        "amount": 22500
+      },
+      {
+        "head": "nursing",
+        "label": "Nursing charges",
+        "amount": 9000
+      },
+      {
+        "head": "practitioners_fees",
+        "label": "Surgeon fees",
+        "amount": 29000
+      },
+      {
+        "head": "operation_theatre",
+        "label": "OT charges",
+        "amount": 18000
+      },
+      {
+        "head": "pharmacy_consumables",
+        "label": "Pharmacy",
+        "amount": 12000
+      }
+    ],
+    "room": {
+      "category_as_billed": "Deluxe single room",
+      "rate_per_day": 7500,
+      "nights": 3
+    },
+    "missing_documents": [],
+    "unestablished": [
+      "Whether the deluxe room was medically necessary"
+    ],
+    "ped_trigger_phrases": [],
+    "confidence": "high"
+  },
+  "guard_verdicts": [
+    {
+      "candidate": "Patient had a fever on admission.",
+      "allowed": false,
+      "negation": "No history of fever or jaundice."
+    },
+    {
+      "candidate": "Patient had jaundice.",
+      "allowed": false,
+      "negation": "No history of fever or jaundice."
+    },
+    {
+      "candidate": "Findings were consistent with sepsis.",
+      "allowed": false
+    },
+    {
+      "candidate": "IV antibiotics were required.",
+      "allowed": false
+    },
+    {
+      "candidate": "Patient underwent laparoscopic cholecystectomy.",
+      "allowed": false
+    },
+    {
+      "candidate": "Ask the treating doctor: does the record establish fever?",
+      "allowed": true
+    },
+    {
+      "candidate": "Ask the nursing station for the indoor case papers.",
+      "allowed": true
+    }
+  ],
+  "resolution": {
+    "old_missing_documents": [],
+    "old_unestablished": [
+      "Whether the deluxe room was medically necessary"
+    ],
+    "fixed": {
+      "kind": "unestablished",
+      "value": "Whether the deluxe room was medically necessary"
+    },
+    "expected_cleared_reasons": [
+      "Summary does not establish: whether the deluxe room was medically necessary"
+    ]
+  }
+}

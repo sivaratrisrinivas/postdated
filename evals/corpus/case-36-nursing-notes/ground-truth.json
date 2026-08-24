@@ -1,0 +1,99 @@
+{
+  "id": "case-36-nursing-notes",
+  "title": "Nursing notes are the missing ward record",
+  "input_image": "input.png",
+  "extraction": {
+    "clinical_statements": [
+      "Anal fissure",
+      "No history of fever or jaundice",
+      "Lateral sphincterotomy"
+    ],
+    "bill_lines": [
+      {
+        "head": "room_rent",
+        "label": "Room rent",
+        "amount": 12600
+      },
+      {
+        "head": "nursing",
+        "label": "Nursing charges",
+        "amount": 6800
+      },
+      {
+        "head": "practitioners_fees",
+        "label": "Surgeon fees",
+        "amount": 14000
+      },
+      {
+        "head": "operation_theatre",
+        "label": "OT charges",
+        "amount": 9500
+      },
+      {
+        "head": "pharmacy_consumables",
+        "label": "Pharmacy",
+        "amount": 4800
+      }
+    ],
+    "room": {
+      "category_as_billed": "Twin sharing room",
+      "rate_per_day": 4200,
+      "nights": 3
+    },
+    "missing_documents": [
+      "Nursing notes"
+    ],
+    "unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "ped_trigger_phrases": [],
+    "confidence": "high"
+  },
+  "guard_verdicts": [
+    {
+      "candidate": "Patient had a fever on admission.",
+      "allowed": false,
+      "negation": "No history of fever or jaundice."
+    },
+    {
+      "candidate": "Patient had jaundice.",
+      "allowed": false,
+      "negation": "No history of fever or jaundice."
+    },
+    {
+      "candidate": "Findings were consistent with sepsis.",
+      "allowed": false
+    },
+    {
+      "candidate": "IV antibiotics were required.",
+      "allowed": false
+    },
+    {
+      "candidate": "Patient underwent laparoscopic cholecystectomy.",
+      "allowed": false
+    },
+    {
+      "candidate": "Ask the treating doctor: does the record establish fever?",
+      "allowed": true
+    },
+    {
+      "candidate": "Ask the nursing station for the indoor case papers.",
+      "allowed": true
+    }
+  ],
+  "resolution": {
+    "old_missing_documents": [
+      "Nursing notes"
+    ],
+    "old_unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "fixed": {
+      "kind": "missing_document",
+      "value": "Nursing notes"
+    },
+    "expected_cleared_reasons": [
+      "Nursing notes not submitted"
+    ]
+  }
+}

@@ -1,0 +1,98 @@
+{
+  "id": "case-17-handwritten-no-fever",
+  "title": "Handwritten note says no fever",
+  "input_image": "input.png",
+  "extraction": {
+    "clinical_statements": [
+      "Senile cataract",
+      "No fever",
+      "Phacoemulsification with IOL under LA"
+    ],
+    "bill_lines": [
+      {
+        "head": "room_rent",
+        "label": "Room rent",
+        "amount": 3000
+      },
+      {
+        "head": "nursing",
+        "label": "Nursing charges",
+        "amount": 2500
+      },
+      {
+        "head": "practitioners_fees",
+        "label": "Surgeon fees",
+        "amount": 16000
+      },
+      {
+        "head": "operation_theatre",
+        "label": "OT charges",
+        "amount": 10000
+      },
+      {
+        "head": "pharmacy_consumables",
+        "label": "Pharmacy",
+        "amount": 4000
+      }
+    ],
+    "room": {
+      "category_as_billed": "Day-care cubicle",
+      "rate_per_day": 3000,
+      "nights": 1
+    },
+    "missing_documents": [
+      "Indoor case papers"
+    ],
+    "unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "ped_trigger_phrases": [],
+    "confidence": "high"
+  },
+  "guard_verdicts": [
+    {
+      "candidate": "Patient had a fever on admission.",
+      "allowed": false,
+      "negation": "No fever."
+    },
+    {
+      "candidate": "Patient had jaundice.",
+      "allowed": false
+    },
+    {
+      "candidate": "Findings were consistent with sepsis.",
+      "allowed": false
+    },
+    {
+      "candidate": "IV antibiotics were required.",
+      "allowed": false
+    },
+    {
+      "candidate": "Patient underwent laparoscopic cholecystectomy.",
+      "allowed": false
+    },
+    {
+      "candidate": "Ask the treating doctor: does the record establish fever?",
+      "allowed": true
+    },
+    {
+      "candidate": "Ask the nursing station for the indoor case papers.",
+      "allowed": true
+    }
+  ],
+  "resolution": {
+    "old_missing_documents": [
+      "Indoor case papers"
+    ],
+    "old_unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "fixed": {
+      "kind": "missing_document",
+      "value": "Indoor case papers"
+    },
+    "expected_cleared_reasons": [
+      "Indoor case papers not submitted"
+    ]
+  }
+}

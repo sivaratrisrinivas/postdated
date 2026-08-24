@@ -1,3 +1,4 @@
+import { loadCorpus } from './corpus.ts';
 import { printExtractReport, runExtractEval } from './extract.eval.ts';
 import {
   evaluateHumanAlignment,
@@ -10,6 +11,13 @@ import { printInvariantReport, runInvariantEval } from './invariants.eval.ts';
 import { printProductReport, runProductEval } from './product.eval.ts';
 import { printResolutionReport, runResolutionEval } from './resolution.eval.ts';
 import { printWorkflowReport, runWorkflowEval } from './workflow.eval.ts';
+
+const corpus = loadCorpus();
+console.log(`corpus: ${corpus.length} handwritten fictional cases`);
+if (corpus.length !== 40) {
+  console.error(`corpus regression: expected 40 cases, found ${corpus.length}`);
+  process.exitCode = 1;
+}
 
 const productReport = runProductEval();
 printProductReport(productReport);
@@ -50,6 +58,7 @@ console.log(`diagnostic wording warnings: ${extractReport.warnings.length}`);
 console.log('false-green rate: unmeasured — say so');
 
 if (
+  corpus.length !== 40 ||
   productReport.failures.length > 0 ||
   guardReport.failures.length > 0 ||
   resolutionReport.failures.length > 0 ||
