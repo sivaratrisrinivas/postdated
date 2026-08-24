@@ -47,22 +47,24 @@ The sample is fictional. The letter is a forecast, not a real insurance decision
    confirm the handover or signed answer.
 5. Tap **Re-photograph the amended summary**. The live path reads the new image again; a demo case
    also offers **Run the amended demo scan** so the journey is rehearsable without a second printout.
-   The resolved line stays greyed out, the remaining red total is recalculated, and the app opens
-   the separate final-result screen — it does not send you back to "Open the fix".
+   The resolved line stays greyed out and the remaining red total is recalculated. If another
+   recoverable line is still open, **Open the fix** stays available (the worked case is
+   ₹1,73,000 → ₹88,000 → ₹48,000). When nothing fixable remains, the final-result screen opens.
 6. Tap **Start a fresh check** on the final-result screen. The loaded policy stays available, but
    the document, extraction, actions, and result are cleared.
 
-The core journey is three primary steps after policy setup: capture the paperwork, read the future
-letter, and take one concrete action. The updated result then appears on its own post-action screen.
+The core journey after policy setup is capture, read the letter, and act on the largest
+fixable line. A second document or doctor action is available while Bucket C lines remain.
 The app keeps documents session-only and does not write clinical facts.
 
 ### Why there is an upload button
 
-The three demo cases are preconfigured so a judge can rehearse the product without depending on
-which file picker or network is available. Upload is the actual product path for a new, user-owned
-discharge summary and final bill that is not one of those demos. With `CEREBRAS_API_KEY` configured,
-that image is read live; without the key, custom uploads show a configuration error instead of
-pretending that the seeded case came from the uploaded document.
+The original fixture and the print-ready PDF use the committed extraction. The public JPG
+is a photograph of that same page: when `CEREBRAS_API_KEY` is set the server attempts a live
+read, but a high-confidence empty bill is treated as a failed read, not a ₹0 letter. The
+demo case then uses the committed extraction and says so. A custom camera/upload never
+gets that fallback — without a key, or when the page yields no bill, it fails and names
+the reason.
 
 The current browser path accepts one image at a time. The client compresses it to JPEG
 before upload. The server accepts JPEG or PNG only — that is what Cerebras image input

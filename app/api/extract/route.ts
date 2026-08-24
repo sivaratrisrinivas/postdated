@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { decideLiveExtraction } from '@/lib/extraction-quality';
 import { SEEDED_EXTRACTION } from '@/lib/fixture';
 import type { ProcessTrace } from '@/lib/process';
 import { extractWithoutKey, hasLiveReaderKey, LIVE_READER } from '@/lib/reader';
@@ -185,7 +186,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'The image reader returned no extraction.' }, { status: 502 });
     }
 
-    const extraction = JSON.parse(text) as Extraction;
+    const parsed = JSON.parse(text) as Extraction;
+    const decided = decideLiveExtraction(parsed, allowFixture);
+    if (!decided.ok) {
+      return NextResponse.json({ error: decided.error }, { status: decided.status });
+    }
+
     const finishedAt = Date.now();
     const trace: ProcessTrace = {
       tool_calls: 0,
@@ -199,8 +205,8 @@ export async function POST(request: Request) {
     };
 
     return NextResponse.json({
-      extraction,
-      source: 'live',
+      extraction: decided.extraction,
+      source: decided.source,
       latency_ms: finishedAt - started,
       trace,
       usage: data.usage,

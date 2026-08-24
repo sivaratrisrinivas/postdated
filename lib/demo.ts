@@ -1,6 +1,5 @@
 import { exposureFor } from './exposure';
 import { SEEDED_EXTRACTION } from './fixture';
-import { LIVE_READER } from './reader';
 import type { Disallowance, Extraction } from './types';
 
 export type DemoCaseId = 'seeded' | 'photo' | 'pdf';
@@ -31,7 +30,7 @@ export const DEMO_CASES: readonly DemoCase[] = [
   {
     id: 'photo',
     title: 'Public photo sample',
-    description: `Public JPG · live ${LIVE_READER.provider} read when ${LIVE_READER.env} is set`,
+    description: `Public JPG · live read only if a bill is visible; otherwise the committed extraction`,
     asset: '/samples/discharge-summary-photo.jpg',
     format: 'image',
     fallback: SEEDED_EXTRACTION,

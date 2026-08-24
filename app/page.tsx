@@ -15,6 +15,7 @@ import {
   type DemoCase,
   type DemoCaseId,
 } from '@/lib/demo';
+import { isUsableLiveExtraction, UNREADABLE_BILL_ERROR } from '@/lib/extraction-quality';
 import { SEEDED_SUMMARY_TEXT } from '@/lib/fixture';
 import {
   applySuccessfulRescan,
@@ -113,6 +114,9 @@ export default function Page() {
       });
       const data = await res.json() as { extraction?: Extraction; error?: string; source?: string; latency_ms?: number };
       if (!res.ok || !data.extraction) throw new Error(data.error ?? 'The image could not be read.');
+      if (data.source === 'live' && !isUsableLiveExtraction(data.extraction)) {
+        throw new Error(data.error ?? UNREADABLE_BILL_ERROR);
+      }
       const nextSource = provenanceSource(data.source, mode);
       const nextLatency = data.latency_ms ?? Date.now() - started;
       if (mode !== 'demo') setActiveDemoCase(null);

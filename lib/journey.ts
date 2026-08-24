@@ -51,9 +51,10 @@ export function withGreyedLines(
 }
 
 /**
- * One physical action, then a re-read, then the final result. Remaining Bucket C
- * lines stay visible on that result; they do not send the user back into another
- * "open the fix" loop.
+ * After an amended read, keep any lines the new extraction no longer supports.
+ * If a Bucket C line is still open, return to the forecast so the next fix can
+ * run — the working fixture path is ₹1,73,000 → ₹88,000 → ₹48,000. Only when
+ * nothing recoverable remains does the journey open the final-result screen.
  */
 export function applySuccessfulRescan(input: {
   nextExtraction: Extraction;
@@ -67,11 +68,15 @@ export function applySuccessfulRescan(input: {
   latency: number | null;
   resolvedLines: Disallowance[];
   resolved: string[];
-  status: 'complete';
+  status: 'ready' | 'complete';
 } {
   const nextForecast = computeForecast(input.nextExtraction, input.policy);
   const resolvedHistory = input.resolvedLines.filter(
     (oldLine) => !nextForecast.lines.some((newLine) => equivalentLine(oldLine, newLine)),
+  );
+  const nextResolved = resolvedHistory.map((line) => line.reason);
+  const stillOpen = nextForecast.lines.some(
+    (line) => line.bucket === 'C' && !nextResolved.includes(line.reason),
   );
 
   return {
@@ -79,7 +84,7 @@ export function applySuccessfulRescan(input: {
     source: input.nextSource,
     latency: input.nextLatency,
     resolvedLines: resolvedHistory,
-    resolved: resolvedHistory.map((line) => line.reason),
-    status: 'complete',
+    resolved: nextResolved,
+    status: stillOpen ? 'ready' : 'complete',
   };
 }

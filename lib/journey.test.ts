@@ -36,6 +36,7 @@ describe('provenanceSource', () => {
   it('labels a demo case without a live read as a demo, not a silent fixture', () => {
     expect(provenanceSource('fixture_no_key', 'demo')).toBe('demo');
     expect(provenanceSource('fixture_error', 'demo')).toBe('demo');
+    expect(provenanceSource('fixture_unreadable', 'demo')).toBe('demo');
   });
 
   it('never relabels a custom upload as a demo case', () => {
@@ -52,13 +53,40 @@ describe('shouldUseDemoFallback', () => {
   });
 });
 
-describe('one-action demo journey', () => {
+describe('committed demo journey', () => {
   it('keeps the committed public sample files on disk', () => {
     expect(existsSync(path.join(process.cwd(), 'public/samples/discharge-summary-photo.jpg'))).toBe(
       true,
     );
     expect(existsSync(path.join(process.cwd(), 'public/samples/discharge-summary.pdf'))).toBe(true);
     expect(existsSync(path.join(process.cwd(), 'public/brand/postdated-mark.png'))).toBe(true);
+  });
+
+  it('walks the fixture path ₹1,73,000 → ₹88,000 → ₹48,000', () => {
+    const first = computeForecast(SEEDED_EXTRACTION, NIVA_BUPA_REASSURE_2);
+    const indoor = first.lines.find((line) => line.reason.includes('Indoor case papers'));
+    const admission = first.lines.find((line) => line.reason.includes('inpatient admission'));
+    if (!indoor || !admission) throw new Error('fixture should have both recoverable lines');
+
+    const afterIndoor = applySuccessfulRescan({
+      nextExtraction: amendDemoExtraction(SEEDED_EXTRACTION, indoor),
+      policy: NIVA_BUPA_REASSURE_2,
+      resolvedLines: [indoor],
+      nextSource: 'demo',
+      nextLatency: null,
+    });
+    expect(afterIndoor.status).toBe('ready');
+    expect(computeForecast(afterIndoor.extraction, NIVA_BUPA_REASSURE_2).disallowed).toBe(88_000);
+
+    const afterAdmission = applySuccessfulRescan({
+      nextExtraction: amendDemoExtraction(afterIndoor.extraction, admission),
+      policy: NIVA_BUPA_REASSURE_2,
+      resolvedLines: [...afterIndoor.resolvedLines, admission],
+      nextSource: 'demo',
+      nextLatency: null,
+    });
+    expect(afterAdmission.status).toBe('complete');
+    expect(computeForecast(afterAdmission.extraction, NIVA_BUPA_REASSURE_2).disallowed).toBe(48_000);
   });
 
   it('completes every committed demo case without a live key', () => {
@@ -83,7 +111,7 @@ describe('one-action demo journey', () => {
         after.resolvedLines,
       );
 
-      expect(after.status).toBe('complete');
+      expect(after.status).toBe('ready');
       expect(after.resolved).toEqual([action.reason]);
       expect(display.disallowed).toBe(88_000);
       expect(display.approved).toBe(152_000);
