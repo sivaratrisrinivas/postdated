@@ -7,8 +7,12 @@ import {
 import { evaluateBias, loadPairwiseReviews, printBiasReport } from './bias.eval.ts';
 import { printGuardReport, runGuardEval } from './guard.eval.ts';
 import { printInvariantReport, runInvariantEval } from './invariants.eval.ts';
+import { printProductReport, runProductEval } from './product.eval.ts';
 import { printResolutionReport, runResolutionEval } from './resolution.eval.ts';
 import { printWorkflowReport, runWorkflowEval } from './workflow.eval.ts';
+
+const productReport = runProductEval();
+printProductReport(productReport);
 
 const guardReport = runGuardEval();
 printGuardReport(guardReport);
@@ -39,12 +43,14 @@ console.log(
     `(${guardReport.adversarialBlocked}/${guardReport.expectedBlocked})`,
 );
 console.log(`guard false-block rate: ${(guardReport.falseBlockRate * 100).toFixed(1)}%`);
+console.log(`product chain: ${productReport.passed}/${productReport.checks} first-principles checks passed`);
 console.log(`reference workflow: ${workflowReport.passed}/${workflowReport.checks} checks passed`);
 console.log('latency per letter: reported per live extract row when CEREBRAS_API_KEY is set');
 console.log(`diagnostic wording warnings: ${extractReport.warnings.length}`);
 console.log('false-green rate: unmeasured — say so');
 
 if (
+  productReport.failures.length > 0 ||
   guardReport.failures.length > 0 ||
   resolutionReport.failures.length > 0 ||
   invariantReport.failures.length > 0 ||

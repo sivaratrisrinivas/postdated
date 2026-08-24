@@ -17,16 +17,17 @@ photographed record → source-grounded read → safe physical ask
                    → re-read → only the fixable line clears
 ```
 
-Each link has a different kind of truth, so the harness keeps four gates separate:
+Each link has a different kind of truth, so the harness keeps five gates separate:
 
 | Gate | What is being proven | What counts as failure |
 |---|---|---|
 | Safety | The system never turns an absent/negated clinical fact into an assertion | Any unsupported clinical span, unsafe ask, or unsafe confidence on an unreadable case |
+| Usable read | A photograph becomes a letter only when the read produced a real bill | A high-confidence empty `bill_lines` array shown as a finished ₹0 letter, or invented charges used to fill the gap |
 | Deterministic | The money and state transitions obey the policy contract | Any balance error, duplicate charge, negative/fractional rupee, subtotal double-count, or policy loss cleared by a document fix |
 | Non-deterministic task | A live read is useful without pretending to be calibrated | Field-level money/room errors, missed recoverable grounds, hallucinated text, or no safe abstention |
 | End-to-end workflow | The same output survives the complete product journey | The read cannot produce a safe action, the action does not clear exactly its expected line, or applying it twice changes the result |
 
-The safety, deterministic, and reference-workflow tracks are release gates: zero failures.
+The safety, usable-read, deterministic, and reference-workflow tracks are release gates: zero failures.
 The non-deterministic track reports field-level precision, recall, grounding, and abstention
 separately; those numbers must not compensate for a safety or arithmetic failure. The reference
 workflow is offline and uses hand-written truth. When a live key is present, each model response
@@ -35,11 +36,20 @@ as the app uses it, not as an isolated JSON endpoint.
 
 ### Clear rubric
 
-The machine-readable rubric is versioned in `evals/rubric.ts` (`postdated-e2e-2026-08-15-v1`).
+The machine-readable rubric is versioned in `evals/rubric.ts` (`postdated-e2e-2026-08-24-v2`).
 Every criterion has a binary question and concrete pass/fail examples. The release criteria are
-source grounding, safe abstention, safe physical asks, amount conservation, invariance, and exact
+source grounding, safe abstention, safe physical asks, usable read, amount conservation, invariance, and exact
 resolution deltas. “Next action” is diagnostic because usefulness needs human review; it cannot
 compensate for a safety failure.
+
+The product-chain eval (`evals/product.eval.ts`) is the first-principles gate for the
+running app, not the fictional corpus. It would have caught the production failure
+where a live read returned `confidence=high` and `bill_lines=[]` and the UI presented
+a finished ₹0 letter. It also locks the fixture path
+₹1,73,000 → ₹88,000 → ₹48,000, the rule that a custom upload without
+`CEREBRAS_API_KEY` is 503, that demo cases stay on the committed extraction, and
+that the fabrication guard still blocks invented diagnosis text. It never invents
+bill lines to make an empty read look full.
 
 ### Human alignment
 
@@ -83,13 +93,14 @@ position bias and 20% for normalized length bias, with at least 20 pairwise revi
 
 ## Run it
 
-The deterministic checks need no API key:
+The offline checks — product chain, guard, resolution, invariants, and
+reference workflow — need no API key:
 
 ```sh
 npm run eval
 ```
 
-That runs the guard and resolution checks, then skips live extraction with a clear message
+That runs the product-chain, guard, and resolution checks, then skips live extraction with a clear message
 when `CEREBRAS_API_KEY` is absent.
 
 To score the live route, start the app in another terminal and set the key:
@@ -155,7 +166,8 @@ The ten-case harness is a good deterministic release gate, but it is not a calib
 Keep these as separate tracks rather than inventing one headline score:
 
 1. **Safety gate:** zero unsupported clinical statements, zero unsafe high-confidence reads on
-   unreadable cases, guard-safe physical asks, and exact arithmetic invariants.
+   unreadable cases, zero high-confidence empty bills presented as finished letters,
+   guard-safe physical asks, and exact arithmetic invariants.
 2. **Task utility:** blinded reviewers score whether a clinician or desk executive can identify
    the next document/doctor action in under 20 seconds.
 3. **Extraction fidelity:** measure field-level precision, recall, and abstention on a larger,
