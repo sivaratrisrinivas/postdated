@@ -1,9 +1,5 @@
 import { createJiti } from 'jiti';
 import type { Extraction } from '../lib/types.ts';
-import type {
-  ApplyInitialReadResult,
-  ApplyRescanResult,
-} from '../lib/journey.ts';
 import type { LiveExtractionDecision } from '../lib/extraction-quality.ts';
 import type { RubricId } from './rubric.ts';
 
@@ -41,6 +37,18 @@ export const PRODUCTION_EMPTY_HIGH_CONFIDENCE: Extraction = {
   confidence: 'high',
 };
 
+/** Journey presentation as the scorer sees it — wide enough to name the old ₹0 finish. */
+export interface PresentedJourneyStep {
+  ok: boolean;
+  status: string;
+  error?: string;
+  extraction?: Extraction;
+  source?: string;
+  latency?: number | null;
+  resolvedLines?: unknown;
+  resolved?: readonly string[];
+}
+
 export interface ProductCheck {
   id: string;
   rubric_id: RubricId;
@@ -63,8 +71,8 @@ function billedTotal(extraction: Extraction): number {
   );
 }
 
-function snapshot(extraction: Extraction): string {
-  return JSON.stringify(extraction);
+function snapshot(value: unknown): string {
+  return JSON.stringify(value);
 }
 
 /**
@@ -75,8 +83,8 @@ function snapshot(extraction: Extraction): string {
 export function scoreUsableReadGate(input: {
   extraction: Extraction;
   decision: LiveExtractionDecision;
-  initial: ApplyInitialReadResult;
-  rescan: ApplyRescanResult;
+  initial: PresentedJourneyStep;
+  rescan: PresentedJourneyStep;
 }): string[] {
   const failures: string[] = [];
   const emptyOrZero =
