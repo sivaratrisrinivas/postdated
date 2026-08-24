@@ -40,7 +40,9 @@ clerk in English, Kannada, or Hindi.
 
 - The current demo supports one pre-parsed insurer policy or an optional policy-photo read, three
   committed demo cases, a custom single-image discharge-summary upload, a deterministic forecast,
-  a document/doctor ask, a before-you-sign gate, and a re-photograph loop.
+  a document/doctor ask, a before-you-sign gate, and a re-photograph loop. Live photograph and
+  policy-page reads call Cerebras (`gemma-4-31b`) and require `CEREBRAS_API_KEY`. Demo cases
+  complete without that key; a custom upload does not fall back to the seeded case.
 - The core consumer journey must be achievable in no more than three screens/actions: capture,
   read the future letter, and act on one fixable line.
 - The system never invents a clinical fact. It may demand a document or ask the treating doctor a

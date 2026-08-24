@@ -1,9 +1,9 @@
 export const MAX_UPLOAD_BYTES = 8 * 1024 * 1024;
 export const MAX_BASE64_LENGTH = Math.ceil((MAX_UPLOAD_BYTES * 4) / 3) + 4;
 
-const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
+const SUPPORTED_IMAGE_TYPES = new Set(['image/jpeg', 'image/png']);
 
-export type SupportedImageType = 'image/jpeg' | 'image/png' | 'image/webp';
+export type SupportedImageType = 'image/jpeg' | 'image/png';
 
 export type ImagePayloadValidation =
   | { ok: true; mediaType: SupportedImageType; bytes: number }

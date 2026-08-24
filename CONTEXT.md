@@ -18,7 +18,7 @@ Transcribed from [POSTDATED.md](./POSTDATED.md), which is the spec. Where the tw
 | **Proportionate deduction** | The cut applied across the *whole* bill — not just the room charge — when the room exceeds the sub-limit. The exact scope is per-insurer clause text; see `docs/research/policy-parameters.md`. |
 | **Non-payable consumables** | Gloves, syringes, PPE. Excluded by the IRDAI standardised list and per-insurer lists. |
 | **Pre-auth** | Pre-authorisation — the cashless approval request the hospital desk files *before* treatment. The B2B surface. |
-| **Medical necessity** | Whether the clinical narrative establishes that inpatient admission was required. The judgement Claude makes; not a fact it may invent. |
+| **Medical necessity** | Whether the clinical narrative establishes that inpatient admission was required. The judgement the live reader makes; not a fact it may invent. |
 
 ## The three buckets
 
@@ -51,16 +51,16 @@ These are not style preferences. Each one has a specific failure attached.
 - **Never "looting."** The hospital is on our side on Bucket C — they want the claim approved too. We cannot accuse our buyer and invoice them in the same breath. Say instead: *"most of what families lose isn't stolen — it's dropped."*
 - **Never rewrite a clinical fact.** Not "improve the wording", not "strengthen the narrative." That is upcoding-as-a-service and one judge sentence ends the pitch. We demand documents and we ask the doctor. Nothing else.
 - **Never a model-emitted percentage.** The pre-auth indicator is a literal count over the seeded corpus — *"queried in 9 of 11 seeded Star cases."* Never "74%".
-- **Never claim calibration.** The forecast is Claude imitating a TPA medical officer, not a model trained on real approve/deny pairs. We report **coverage** against public Ombudsman grounds, and we say the false-green rate is unmeasured.
+- **Never claim calibration.** The forecast is the live reader imitating a TPA medical officer, not a model trained on real approve/deny pairs. We report **coverage** against public Ombudsman grounds, and we say the false-green rate is unmeasured.
 
 ## The architectural line
 
 **Arithmetic never touches the model, and we say that on stage.**
 
-| Deterministic code | Claude |
+| Deterministic code | Live reader — Cerebras `gemma-4-31b` |
 |---|---|
 | Sub-limits, co-pay, waiting periods | Reading the photographed summary |
-| Proportionate deduction, all rupee roll-up | Extracting params from a 40-page wording |
+| Proportionate deduction, all rupee roll-up | Optional policy-page extraction |
 | Letter versioning, the diff, the grey-out | Judging medical necessity for this payer |
-| HTML→PDF render, the ask sheet | Writing in the TPA's register |
-| **The fabrication guard** | Inducing the dialect card |
+| HTML letter render, the ask sheet | Phrasing missing documents and doctor questions |
+| **The fabrication guard** | (dialect card was not built — see BUILD-TODAY.md) |

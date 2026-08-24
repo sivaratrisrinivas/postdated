@@ -27,7 +27,7 @@ export interface BillLine {
 }
 
 /**
- * Everything Claude is allowed to return from a photographed discharge summary.
+ * Everything the live photograph reader is allowed to return from a discharge summary.
  * Note what is absent: no diagnosis it inferred, no clinical claim, no rupee arithmetic.
  */
 export interface Extraction {

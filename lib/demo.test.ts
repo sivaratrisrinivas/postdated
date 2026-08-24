@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { amendDemoExtraction, DEMO_CASES } from './demo';
+import { amendDemoExtraction, DEMO_CASES, usesLiveExtract } from './demo';
 import { SEEDED_EXTRACTION } from './fixture';
 import { computeForecast } from './deduct';
 import { NIVA_BUPA_REASSURE_2 } from './policy';
@@ -11,6 +11,13 @@ describe('demo cases', () => {
     expect(DEMO_CASES[2].asset).toBe('/samples/discharge-summary.pdf');
   });
 
+  it('does not send any demo case through the live reader', () => {
+    for (const demoCase of DEMO_CASES) {
+      expect(usesLiveExtract(demoCase)).toBe(false);
+      expect(demoCase.fallback).toEqual(SEEDED_EXTRACTION);
+    }
+  });
+
   it('removes the action source from the amended demo read', () => {
     const forecast = computeForecast(SEEDED_EXTRACTION, NIVA_BUPA_REASSURE_2);
     const actionLine = forecast.lines.find((line) => line.bucket === 'C');
@@ -20,5 +27,19 @@ describe('demo cases', () => {
     expect(amended.missing_documents.length + amended.unestablished.length).toBe(
       SEEDED_EXTRACTION.missing_documents.length + SEEDED_EXTRACTION.unestablished.length - 1,
     );
+  });
+
+  it('clears a live-phrased indoor-case-papers line by exposure, not string equality', () => {
+    const livePhrased = {
+      ...SEEDED_EXTRACTION,
+      missing_documents: ['Indoor case papers (day-by-day nursing and treatment record)'],
+    };
+    const forecast = computeForecast(livePhrased, NIVA_BUPA_REASSURE_2);
+    const actionLine = forecast.lines.find((line) => line.reason.includes('Indoor case papers'));
+    if (!actionLine) throw new Error('live-phrased indoor papers should still produce a line');
+
+    const amended = amendDemoExtraction(livePhrased, actionLine);
+    expect(amended.missing_documents).toEqual([]);
+    expect(amended.unestablished).toEqual(SEEDED_EXTRACTION.unestablished);
   });
 });

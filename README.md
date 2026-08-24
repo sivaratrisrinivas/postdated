@@ -1,6 +1,6 @@
 # POSTDATED
 
-> See the insurance rejection letter before the insurer sends it — while the doctor and the paperwork are still there.
+> See the insurance rejection letter three weeks early — while the doctor and the paperwork are still there.
 
 POSTDATED is a hackathon demo for the hospital discharge counter. It loads a policy, reads a
 photograph of a discharge summary and bill, then shows:
@@ -15,7 +15,13 @@ read the future letter, and take one concrete document-or-doctor action. After t
 re-photograph step proves what changed before the separate final result screen. The letter remains
 the hero artefact; safety details stay available without competing with the next move.
 
-The forecast uses ordinary code. The model only reads the photograph. It must not invent a diagnosis, symptom, or reason for treatment. A separate check blocks unsupported medical wording.
+The forecast uses ordinary code. When a new photograph is read live, the server calls
+Cerebras Chat Completions (`gemma-4-31b`) with `CEREBRAS_API_KEY`. The model only reads
+the page. It must not invent a diagnosis, symptom, or reason for treatment. A separate
+check blocks unsupported medical wording.
+
+This repository is MIT-licensed. The author's other personal repos are typically
+unlicensed; MIT is the default chosen for this public demo.
 
 ## Try the demo
 
@@ -28,7 +34,8 @@ The sample is fictional. The letter is a forecast, not a real insurance decision
 ## First-time user flow
 
 1. On the policy screen, tap **Niva Bupa · ReAssure 2.0** for the pre-parsed demo policy. The
-   **Photograph a policy page** path is available when `CEREBRAS_API_KEY` is configured.
+   **Photograph a policy page** path needs `CEREBRAS_API_KEY`; without it the app names that
+   env and tells you to pick the supported insurer.
 2. On the paperwork screen, either use **Take a photo of the paperwork** for a new rear-camera
    image or **Choose an existing photo** for a file already on the device. You can also run one of
    the three committed demo cases: the original fixture, the public JPG, or the print-ready public
@@ -40,26 +47,31 @@ The sample is fictional. The letter is a forecast, not a real insurance decision
    confirm the handover or signed answer.
 5. Tap **Re-photograph the amended summary**. The live path reads the new image again; a demo case
    also offers **Run the amended demo scan** so the journey is rehearsable without a second printout.
-   The resolved line stays greyed out and the remaining red total is recalculated.
+   The resolved line stays greyed out and the remaining red total is recalculated. If another
+   recoverable line is still open, **Open the fix** stays available (the worked case is
+   ₹1,73,000 → ₹88,000 → ₹48,000). When nothing fixable remains, the final-result screen opens.
 6. Tap **Start a fresh check** on the final-result screen. The loaded policy stays available, but
    the document, extraction, actions, and result are cleared.
 
-The core journey is three primary steps after policy setup: capture the paperwork, read the future
-letter, and take one concrete action. The updated result then appears on its own post-action screen.
+The core journey after policy setup is capture, read the letter, and act on the largest
+fixable line. A second document or doctor action is available while Bucket C lines remain.
 The app keeps documents session-only and does not write clinical facts.
 
 ### Why there is an upload button
 
-The three demo cases are preconfigured so a judge can rehearse the product without depending on
-which file picker or network is available. Upload is the actual product path for a new, user-owned
-discharge summary and final bill that is not one of those demos. With `CEREBRAS_API_KEY` configured,
-that image is read live; without the key, custom uploads show a configuration error instead of
-pretending that the seeded case came from the uploaded document.
+All three demo cases use the same committed extraction. The public JPG is a photograph of
+that page, shown as a preview — it is not a live-vision case. A Cerebras read of it has
+returned a high-confidence empty bill; inventing line items to fill the letter would be
+worse. Live reading is the custom camera/upload path. Without `CEREBRAS_API_KEY`, or when
+the page yields no bill, that path fails and names the reason. It does not silently
+become the seeded case.
 
-The current browser path accepts one image at a time (JPG, PNG, HEIC formats supported by the
-browser). The camera and existing-file controls are intentionally separate because mobile
-browser support for the `capture` hint varies. The committed PDF is a preconfigured demo case;
-PDF vision upload and multi-page batching are not part of this demo build. See
+The current browser path accepts one image at a time. The client compresses it to JPEG
+before upload. The server accepts JPEG or PNG only — that is what Cerebras image input
+allows. HEIC works only if the browser can decode it first. The camera and existing-file
+controls are intentionally separate because mobile browser support for the `capture` hint
+varies. The committed PDF is a preconfigured demo case; PDF vision upload and multi-page
+batching are not part of this demo build. See
 [`docs/research/upload-options.md`](./docs/research/upload-options.md) for the researched
 production options and the retention tradeoffs.
 
@@ -75,16 +87,24 @@ npm install
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). Without a key, the app shows its saved sample result.
+Open [http://localhost:3000](http://localhost:3000). Copy `.env.example` to `.env.local`
+and add a Cerebras key only if you want the live photograph path.
 
-To read a new photograph, set a Cerebras key in your shell before starting the app:
+Without `CEREBRAS_API_KEY`:
+
+- the three committed demo cases still complete end to end;
+- a custom upload or policy photograph fails with an error that names `CEREBRAS_API_KEY`;
+- the app does not silently substitute the seeded case for an uploaded file.
+
+To read a new photograph, set the key in the server environment before starting the app:
 
 ```sh
 export CEREBRAS_API_KEY=your-key
 npm run dev
 ```
 
-The key stays on the server. It is never sent to the browser.
+The key stays on the server. It is never sent to the browser. There is no Anthropic /
+Claude client in this repo.
 
 ## Check the project
 

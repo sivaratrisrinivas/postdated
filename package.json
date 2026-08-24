@@ -2,6 +2,8 @@
   "name": "postdated",
   "version": "0.1.0",
   "private": true,
+  "description": "See the insurance rejection letter three weeks early — while the doctor and the paperwork are still there.",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev --webpack",
     "build": "next build --webpack",

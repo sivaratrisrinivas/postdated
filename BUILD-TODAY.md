@@ -1,5 +1,9 @@
 # BUILD TODAY — solo, re-anchored 12:50
 
+**Shipped reader (after the freeze):** the live photograph call is Cerebras
+`gemma-4-31b` behind `CEREBRAS_API_KEY`, not Claude. This file is the day's cut
+list. Do not treat "Claude vision" below as the running stack.
+
 **This supersedes POSTDATED.md §11 for today.** §11 assumes three engineers and a 11:30 start
 (~12 usable engineer-hours). Reality: one person, 12:50 start, freeze 15:30 — **2h40m ≈ 2.7
 engineer-hours, 22% of the plan.** So the plan is cut to a fifth. Everything below is ordered by
