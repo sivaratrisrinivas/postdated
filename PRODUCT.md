@@ -59,7 +59,7 @@ clerk in English, Kannada, or Hindi.
 - Product brief and safety boundary: `POSTDATED.md` and `CONTEXT.md`.
 - Hand-read Ombudsman repudiation-ground taxonomy: `docs/research/ombudsman-repudiation-grounds.md`.
 - Per-insurer policy parameters: `docs/research/policy-parameters.md`.
-- Ten fictional image-based evaluation cases and handwritten ground truth: `evals/corpus/`.
+- Forty fictional image-based evaluation cases and handwritten ground truth: `evals/corpus/`.
 - The deterministic guard, forecast engine, and current seeded demo fixture are in `lib/`.
 
 ## Product Principles

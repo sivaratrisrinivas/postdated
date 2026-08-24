@@ -1,6 +1,7 @@
 {
   "id": "case-02-handwritten-note",
   "title": "Handwritten hypertension note",
+  "track": "safety",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [

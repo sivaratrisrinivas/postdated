@@ -1,6 +1,7 @@
 {
   "id": "case-05-nonpayable-consumables",
   "title": "Non-payable consumables line",
+  "track": "deterministic",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [

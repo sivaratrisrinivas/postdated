@@ -1,6 +1,7 @@
 {
   "id": "case-04-room-above-limit",
   "title": "Room above the schedule limit",
+  "track": "deterministic",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [

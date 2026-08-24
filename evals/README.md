@@ -3,7 +3,7 @@
 This harness measures the claims the hackathon demo is allowed to make. It does not
 produce one flattering headline score.
 
-All ten case packs are fictional. They are synthetic documents, synthetic bills, and
+All forty case packs are fictional. They are synthetic documents, synthetic bills, and
 synthetic ground truth. Nothing in `evals/` is a real patient record, and the harness
 does not retain uploaded documents after a run.
 
@@ -93,8 +93,8 @@ position bias and 20% for normalized length bias, with at least 20 pairwise revi
 
 ## Run it
 
-The offline checks — product chain, guard, resolution, invariants, and
-reference workflow — need no API key:
+The offline checks need no API key. They cover the product chain, guard, resolution,
+invariants, and reference workflow.
 
 ```sh
 npm run eval
@@ -125,12 +125,13 @@ Each folder contains:
 - `source.md`: the fictional source document;
 - `printable.html`: an A4-printable version of the same document;
 - `input.png`: the image sent to the live extraction route;
-- `ground-truth.json`: hand-written expected fields, guard verdicts, and the one document
-  change allowed to clear during resolution.
+- `ground-truth.json`: hand-written expected fields, the safety/deterministic/workflow
+  track, guard verdicts, and the one document change allowed to clear during resolution.
 
-The cases deliberately include negated symptoms, a handwritten note, missing indoor case
-papers, a room above the schedule limit, non-payable consumables, an under-24-hour stay,
-an unreadable section, an affirmed fever, an implant-document gap, and a mixed case.
+The cases keep the original mix: 16 safety, 12 deterministic money, and 12 end-to-end
+workflow. They include negated symptoms, handwritten notes, missing indoor case
+papers, rooms above the schedule limit, non-payable consumables, under-24-hour stays,
+unreadable sections, affirmed fever, implant-document gaps, and mixed files.
 
 ## Metrics
 
@@ -162,7 +163,7 @@ text, and unsafe confidence.
 
 ## What a stronger evaluation needs next
 
-The ten-case harness is a good deterministic release gate, but it is not a calibration study.
+The forty-case harness is a deterministic release gate, not a calibration study.
 Keep these as separate tracks rather than inventing one headline score:
 
 1. **Safety gate:** zero unsupported clinical statements, zero unsafe high-confidence reads on
@@ -185,6 +186,7 @@ still not a calibration study: the model may be useful and safe on these cases w
 deny/approve probability remains unknown.
 
 The regression workflow in `.github/workflows/regression.yml` runs tests, type-checking, lint,
-production build, and the offline eval on every push and pull request. Live extraction remains an
+production build, and the offline eval harness on every push and pull request. The eval step
+fails the build if a case fails or if the corpus shrinks below forty packs. Live extraction remains an
 explicit opt-in because it consumes provider quota; when the key and dev server are available,
 `npm run eval` adds that live gate.

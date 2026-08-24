@@ -1,6 +1,7 @@
 {
   "id": "case-10-mixed",
   "title": "Mixed document gap and IV antibiotics",
+  "track": "workflow",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [
