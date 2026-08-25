@@ -1,6 +1,7 @@
 {
   "id": "case-09-implant-missing",
   "title": "Implant invoice missing",
+  "track": "workflow",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [

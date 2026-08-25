@@ -1,6 +1,7 @@
 {
   "id": "case-06-under-24-hour",
   "title": "Under-24-hour stay",
+  "track": "deterministic",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [

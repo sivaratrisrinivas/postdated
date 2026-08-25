@@ -1,0 +1,108 @@
+{
+  "id": "case-40-mixed-room-consumables-indoor",
+  "title": "Mixed room, consumables, handwritten note, and indoor gap",
+  "track": "workflow",
+  "input_image": "input.png",
+  "extraction": {
+    "clinical_statements": [
+      "Peritonitis after bowel perforation",
+      "IV antibiotics continued for 48 hours",
+      "No fever at discharge",
+      "No history of jaundice",
+      "Review drain in 5 days"
+    ],
+    "bill_lines": [
+      {
+        "head": "room_rent",
+        "label": "Room rent",
+        "amount": 38000
+      },
+      {
+        "head": "nursing",
+        "label": "Nursing charges",
+        "amount": 17000
+      },
+      {
+        "head": "practitioners_fees",
+        "label": "Surgeon fees",
+        "amount": 40000
+      },
+      {
+        "head": "operation_theatre",
+        "label": "OT charges",
+        "amount": 30000
+      },
+      {
+        "head": "non_payable_consumables",
+        "label": "Gloves and PPE",
+        "amount": 7000
+      },
+      {
+        "head": "pharmacy_consumables",
+        "label": "Pharmacy",
+        "amount": 48000
+      }
+    ],
+    "room": {
+      "category_as_billed": "Deluxe single room",
+      "rate_per_day": 9500,
+      "nights": 4
+    },
+    "missing_documents": [
+      "Indoor case papers",
+      "Fully itemised bill"
+    ],
+    "unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "ped_trigger_phrases": [],
+    "confidence": "high"
+  },
+  "guard_verdicts": [
+    {
+      "candidate": "Patient had a fever on admission.",
+      "allowed": false
+    },
+    {
+      "candidate": "Patient had jaundice.",
+      "allowed": false,
+      "negation": "No history of jaundice."
+    },
+    {
+      "candidate": "Findings were consistent with sepsis.",
+      "allowed": false
+    },
+    {
+      "candidate": "IV antibiotics were required.",
+      "allowed": true
+    },
+    {
+      "candidate": "Patient underwent laparoscopic cholecystectomy.",
+      "allowed": false
+    },
+    {
+      "candidate": "Ask the treating doctor: does the record establish fever?",
+      "allowed": true
+    },
+    {
+      "candidate": "Ask the nursing station for the indoor case papers.",
+      "allowed": true
+    }
+  ],
+  "resolution": {
+    "old_missing_documents": [
+      "Indoor case papers",
+      "Fully itemised bill"
+    ],
+    "old_unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "fixed": {
+      "kind": "missing_document",
+      "value": "Indoor case papers"
+    },
+    "expected_cleared_reasons": [
+      "Indoor case papers not submitted"
+    ]
+  }
+}

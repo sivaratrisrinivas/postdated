@@ -1,0 +1,108 @@
+{
+  "id": "case-33-indoor-and-knee-implant",
+  "title": "Missing indoor papers and knee implant records",
+  "track": "workflow",
+  "input_image": "input.png",
+  "extraction": {
+    "clinical_statements": [
+      "Osteoarthritis of the right knee",
+      "No history of fever or jaundice",
+      "Total knee replacement",
+      "Cobalt chrome knee, batch KN-033"
+    ],
+    "bill_lines": [
+      {
+        "head": "room_rent",
+        "label": "Room rent",
+        "amount": 12800
+      },
+      {
+        "head": "nursing",
+        "label": "Nursing charges",
+        "amount": 12000
+      },
+      {
+        "head": "practitioners_fees",
+        "label": "Surgeon fees",
+        "amount": 40000
+      },
+      {
+        "head": "operation_theatre",
+        "label": "OT charges",
+        "amount": 28000
+      },
+      {
+        "head": "implants_devices",
+        "label": "cobalt-chrome TKR",
+        "amount": 90000
+      },
+      {
+        "head": "pharmacy_consumables",
+        "label": "Pharmacy",
+        "amount": 22000
+      }
+    ],
+    "room": {
+      "category_as_billed": "General ward",
+      "rate_per_day": 3200,
+      "nights": 4
+    },
+    "missing_documents": [
+      "Indoor case papers",
+      "Implant invoice and sticker"
+    ],
+    "unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "ped_trigger_phrases": [],
+    "confidence": "high"
+  },
+  "guard_verdicts": [
+    {
+      "candidate": "Patient had a fever on admission.",
+      "allowed": false,
+      "negation": "No history of fever or jaundice."
+    },
+    {
+      "candidate": "Patient had jaundice.",
+      "allowed": false,
+      "negation": "No history of fever or jaundice."
+    },
+    {
+      "candidate": "Findings were consistent with sepsis.",
+      "allowed": false
+    },
+    {
+      "candidate": "IV antibiotics were required.",
+      "allowed": false
+    },
+    {
+      "candidate": "Patient underwent laparoscopic cholecystectomy.",
+      "allowed": false
+    },
+    {
+      "candidate": "Ask the treating doctor: does the record establish fever?",
+      "allowed": true
+    },
+    {
+      "candidate": "Ask the nursing station for the indoor case papers.",
+      "allowed": true
+    }
+  ],
+  "resolution": {
+    "old_missing_documents": [
+      "Indoor case papers",
+      "Implant invoice and sticker"
+    ],
+    "old_unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "fixed": {
+      "kind": "missing_document",
+      "value": "Indoor case papers"
+    },
+    "expected_cleared_reasons": [
+      "Indoor case papers not submitted"
+    ]
+  }
+}

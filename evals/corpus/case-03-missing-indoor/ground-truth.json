@@ -1,6 +1,7 @@
 {
   "id": "case-03-missing-indoor",
   "title": "Missing indoor papers and implant records",
+  "track": "workflow",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [

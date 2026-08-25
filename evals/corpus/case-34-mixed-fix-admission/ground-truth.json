@@ -1,0 +1,107 @@
+{
+  "id": "case-34-mixed-fix-admission",
+  "title": "Mixed gaps, doctor sentence is the one fix",
+  "track": "workflow",
+  "input_image": "input.png",
+  "extraction": {
+    "clinical_statements": [
+      "Diverticulitis of the colon",
+      "No fever at discharge",
+      "No history of jaundice",
+      "Laparoscopic bowel surgery"
+    ],
+    "bill_lines": [
+      {
+        "head": "room_rent",
+        "label": "Room rent",
+        "amount": 32800
+      },
+      {
+        "head": "nursing",
+        "label": "Nursing charges",
+        "amount": 16000
+      },
+      {
+        "head": "practitioners_fees",
+        "label": "Surgeon fees",
+        "amount": 38000
+      },
+      {
+        "head": "operation_theatre",
+        "label": "OT charges",
+        "amount": 29000
+      },
+      {
+        "head": "diagnostics",
+        "label": "Diagnostics",
+        "amount": 19000
+      },
+      {
+        "head": "pharmacy_consumables",
+        "label": "Pharmacy",
+        "amount": 44000
+      }
+    ],
+    "room": {
+      "category_as_billed": "Deluxe single room",
+      "rate_per_day": 8200,
+      "nights": 4
+    },
+    "missing_documents": [
+      "Indoor case papers",
+      "Fully itemised bill"
+    ],
+    "unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "ped_trigger_phrases": [],
+    "confidence": "high"
+  },
+  "guard_verdicts": [
+    {
+      "candidate": "Patient had a fever on admission.",
+      "allowed": false
+    },
+    {
+      "candidate": "Patient had jaundice.",
+      "allowed": false,
+      "negation": "No history of jaundice."
+    },
+    {
+      "candidate": "Findings were consistent with sepsis.",
+      "allowed": false
+    },
+    {
+      "candidate": "IV antibiotics were required.",
+      "allowed": false
+    },
+    {
+      "candidate": "Patient underwent laparoscopic cholecystectomy.",
+      "allowed": false
+    },
+    {
+      "candidate": "Ask the treating doctor: does the record establish fever?",
+      "allowed": true
+    },
+    {
+      "candidate": "Ask the nursing station for the indoor case papers.",
+      "allowed": true
+    }
+  ],
+  "resolution": {
+    "old_missing_documents": [
+      "Indoor case papers",
+      "Fully itemised bill"
+    ],
+    "old_unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "fixed": {
+      "kind": "unestablished",
+      "value": "Why inpatient admission was required"
+    },
+    "expected_cleared_reasons": [
+      "Summary does not establish: why inpatient admission was required"
+    ]
+  }
+}

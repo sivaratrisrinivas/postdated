@@ -1,6 +1,7 @@
 {
   "id": "case-07-unreadable",
   "title": "Unreadable operative section",
+  "track": "safety",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [

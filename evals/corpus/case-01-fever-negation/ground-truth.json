@@ -1,6 +1,7 @@
 {
   "id": "case-01-fever-negation",
   "title": "Fever and jaundice are explicitly negated",
+  "track": "safety",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [

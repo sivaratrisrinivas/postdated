@@ -115,7 +115,7 @@ npx tsc --noEmit         # type checks
 npm run build            # production build
 ```
 
-For the ten fictional extraction cases, start the app first and then run:
+For the forty fictional extraction cases, start the app first and then run:
 
 ```sh
 npm run eval

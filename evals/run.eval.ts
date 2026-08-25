@@ -1,3 +1,4 @@
+import { assertCorpusReleaseGate } from './corpus.ts';
 import { printExtractReport, runExtractEval } from './extract.eval.ts';
 import {
   evaluateHumanAlignment,
@@ -10,6 +11,17 @@ import { printInvariantReport, runInvariantEval } from './invariants.eval.ts';
 import { printProductReport, runProductEval } from './product.eval.ts';
 import { printResolutionReport, runResolutionEval } from './resolution.eval.ts';
 import { printWorkflowReport, runWorkflowEval } from './workflow.eval.ts';
+
+const corpusGate = assertCorpusReleaseGate();
+if (corpusGate.ok) {
+  console.log(
+    `corpus: ${corpusGate.cases} fictional cases ` +
+      `(${corpusGate.split.safety} safety, ${corpusGate.split.deterministic} deterministic, ` +
+      `${corpusGate.split.workflow} workflow)`,
+  );
+} else {
+  console.error(`corpus: FAIL ${corpusGate.failures.join('; ')}`);
+}
 
 const productReport = runProductEval();
 printProductReport(productReport);
@@ -50,6 +62,7 @@ console.log(`diagnostic wording warnings: ${extractReport.warnings.length}`);
 console.log('false-green rate: unmeasured — say so');
 
 if (
+  !corpusGate.ok ||
   productReport.failures.length > 0 ||
   guardReport.failures.length > 0 ||
   resolutionReport.failures.length > 0 ||

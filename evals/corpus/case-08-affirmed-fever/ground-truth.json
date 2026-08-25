@@ -1,6 +1,7 @@
 {
   "id": "case-08-affirmed-fever",
   "title": "Affirmed fever, negated jaundice",
+  "track": "safety",
   "input_image": "input.png",
   "extraction": {
     "clinical_statements": [

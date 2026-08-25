@@ -1,0 +1,105 @@
+{
+  "id": "case-24-room-8000-four-nights",
+  "title": "Room at ₹8,000 for four nights",
+  "track": "deterministic",
+  "input_image": "input.png",
+  "extraction": {
+    "clinical_statements": [
+      "Right ovarian cyst",
+      "No history of fever or jaundice",
+      "Laparoscopic cystectomy under GA"
+    ],
+    "bill_lines": [
+      {
+        "head": "room_rent",
+        "label": "Room rent",
+        "amount": 32000
+      },
+      {
+        "head": "nursing",
+        "label": "Nursing charges",
+        "amount": 14000
+      },
+      {
+        "head": "practitioners_fees",
+        "label": "Surgeon fees",
+        "amount": 32000
+      },
+      {
+        "head": "operation_theatre",
+        "label": "OT charges",
+        "amount": 24000
+      },
+      {
+        "head": "diagnostics",
+        "label": "Diagnostics",
+        "amount": 9000
+      },
+      {
+        "head": "pharmacy_consumables",
+        "label": "Pharmacy",
+        "amount": 18000
+      }
+    ],
+    "room": {
+      "category_as_billed": "Deluxe single room",
+      "rate_per_day": 8000,
+      "nights": 4
+    },
+    "missing_documents": [
+      "Indoor case papers"
+    ],
+    "unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "ped_trigger_phrases": [],
+    "confidence": "high"
+  },
+  "guard_verdicts": [
+    {
+      "candidate": "Patient had a fever on admission.",
+      "allowed": false,
+      "negation": "No history of fever or jaundice."
+    },
+    {
+      "candidate": "Patient had jaundice.",
+      "allowed": false,
+      "negation": "No history of fever or jaundice."
+    },
+    {
+      "candidate": "Findings were consistent with sepsis.",
+      "allowed": false
+    },
+    {
+      "candidate": "IV antibiotics were required.",
+      "allowed": false
+    },
+    {
+      "candidate": "Patient underwent laparoscopic cholecystectomy.",
+      "allowed": false
+    },
+    {
+      "candidate": "Ask the treating doctor: does the record establish fever?",
+      "allowed": true
+    },
+    {
+      "candidate": "Ask the nursing station for the indoor case papers.",
+      "allowed": true
+    }
+  ],
+  "resolution": {
+    "old_missing_documents": [
+      "Indoor case papers"
+    ],
+    "old_unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "fixed": {
+      "kind": "missing_document",
+      "value": "Indoor case papers"
+    },
+    "expected_cleared_reasons": [
+      "Indoor case papers not submitted"
+    ]
+  }
+}

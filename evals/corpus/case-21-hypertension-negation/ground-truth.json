@@ -1,0 +1,111 @@
+{
+  "id": "case-21-hypertension-negation",
+  "title": "Hypertension is explicitly negated",
+  "track": "safety",
+  "input_image": "input.png",
+  "extraction": {
+    "clinical_statements": [
+      "Right inguinal hernia",
+      "No history of hypertension",
+      "Open hernia repair with mesh"
+    ],
+    "bill_lines": [
+      {
+        "head": "room_rent",
+        "label": "Room rent",
+        "amount": 7200
+      },
+      {
+        "head": "nursing",
+        "label": "Nursing charges",
+        "amount": 6000
+      },
+      {
+        "head": "practitioners_fees",
+        "label": "Surgeon fees",
+        "amount": 19000
+      },
+      {
+        "head": "operation_theatre",
+        "label": "OT charges",
+        "amount": 15000
+      },
+      {
+        "head": "implants_devices",
+        "label": "Implants and mesh",
+        "amount": 22000
+      },
+      {
+        "head": "pharmacy_consumables",
+        "label": "Pharmacy",
+        "amount": 14000
+      }
+    ],
+    "room": {
+      "category_as_billed": "General ward",
+      "rate_per_day": 2400,
+      "nights": 3
+    },
+    "missing_documents": [
+      "Indoor case papers",
+      "Implant invoice and sticker"
+    ],
+    "unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "ped_trigger_phrases": [],
+    "confidence": "high"
+  },
+  "guard_verdicts": [
+    {
+      "candidate": "Patient had a fever on admission.",
+      "allowed": false,
+      "negation": "No history of fever."
+    },
+    {
+      "candidate": "Patient had jaundice.",
+      "allowed": false
+    },
+    {
+      "candidate": "Findings were consistent with sepsis.",
+      "allowed": false
+    },
+    {
+      "candidate": "IV antibiotics were required.",
+      "allowed": false
+    },
+    {
+      "candidate": "Patient underwent laparoscopic cholecystectomy.",
+      "allowed": false
+    },
+    {
+      "candidate": "The patient has hypertension.",
+      "allowed": false,
+      "negation": "No history of hypertension."
+    },
+    {
+      "candidate": "Ask the treating doctor: does the record establish fever?",
+      "allowed": true
+    },
+    {
+      "candidate": "Ask the nursing station for the indoor case papers.",
+      "allowed": true
+    }
+  ],
+  "resolution": {
+    "old_missing_documents": [
+      "Indoor case papers",
+      "Implant invoice and sticker"
+    ],
+    "old_unestablished": [
+      "Why inpatient admission was required"
+    ],
+    "fixed": {
+      "kind": "missing_document",
+      "value": "Indoor case papers"
+    },
+    "expected_cleared_reasons": [
+      "Indoor case papers not submitted"
+    ]
+  }
+}
