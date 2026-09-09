@@ -13,9 +13,9 @@ Transcribed from [POSTDATED.md](./POSTDATED.md), which is the spec. Where the tw
 | **Discharge summary** | The signed medico-legal record of the admission. Photographed at the counter. **The system never writes into it** — see Fabrication guard. |
 | **Indoor case papers** | The ward's day-by-day nursing and treatment notes. The single most common missing document. |
 | **Disallowance** | A line the insurer refuses to pay. Not "rejection" — a claim is usually *partially* disallowed, and the partial is the whole point. |
-| **Repudiation ground** | The stated reason for a disallowance. The taxonomy of these, from public Ombudsman awards, is our ground truth (see `docs/research/`). |
+| **Repudiation ground** | The stated reason for a disallowance. The taxonomy of these, from public Ombudsman awards, is our ground truth (see `research/`). |
 | **Room-rent sub-limit** | The ₹/day room cap in the policy. Exceeding it triggers a **proportionate deduction**. |
-| **Proportionate deduction** | The cut applied across the *whole* bill — not just the room charge — when the room exceeds the sub-limit. The exact scope is per-insurer clause text; see `docs/research/policy-parameters.md`. |
+| **Proportionate deduction** | The cut applied across the *whole* bill — not just the room charge — when the room exceeds the sub-limit. The exact scope is per-insurer clause text; see `research/policy-parameters.md`. |
 | **Non-payable consumables** | Gloves, syringes, PPE. Excluded by the IRDAI standardised list and per-insurer lists. |
 | **Pre-auth** | Pre-authorisation — the cashless approval request the hospital desk files *before* treatment. The B2B surface. |
 | **Medical necessity** | Whether the clinical narrative establishes that inpatient admission was required. The judgement the live reader makes; not a fact it may invent. |

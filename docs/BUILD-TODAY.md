@@ -54,7 +54,7 @@ one beat beats a demo that doesn't run.
 ## The honesty beat, revised — research came back different
 
 §12 hoped for *"14 grounds, our checklist fires on 12."* The actual hand-read of 40 Ombudsman
-awards (`docs/research/ombudsman-repudiation-grounds.md`) says **24 grounds — 4 YES, 12 PARTIAL,
+awards (`research/ombudsman-repudiation-grounds.md`) says **24 grounds — 4 YES, 12 PARTIAL,
 8 NO**, and the three largest by volume are all NO:
 
 | Ground | Awards | Detectable? |
