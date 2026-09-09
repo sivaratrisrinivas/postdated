@@ -12,7 +12,7 @@ Hacking window 11:30–16:30 IST; **feature freeze 15:30**.
   non-goals (§10), the build plan (§11), the demo script (§13). Read §9 before writing any code
   that generates text.
 - **[CONTEXT.md](./CONTEXT.md)** — the glossary, including the words we deliberately do not use.
-- **`docs/research/`** — primary-source findings: the Ombudsman repudiation-ground taxonomy and the
+- **`research/`** — primary-source findings: the Ombudsman repudiation-ground taxonomy and the
   per-insurer policy parameters the deterministic calculator loads.
 
 **The one rule that overrides everything:** the system never writes a clinical fact. It demands
@@ -22,12 +22,12 @@ documents and it asks the doctor. See §9.
 
 ### Issue tracker
 
-Issues live as GitHub issues in `sivaratrisrinivas/postdated`, managed with the `gh` CLI. See `docs/agents/issue-tracker.md`.
+Issues live as GitHub issues in `sivaratrisrinivas/postdated`, managed with the `gh` CLI. See `agents/issue-tracker.md`.
 
 ### Triage labels
 
-The five canonical triage roles, using their default label strings. See `docs/agents/triage-labels.md`.
+The five canonical triage roles, using their default label strings. See `agents/triage-labels.md`.
 
 ### Domain docs
 
-Single-context — one `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context — one `CONTEXT.md` and `adr/`. See `agents/domain.md`.

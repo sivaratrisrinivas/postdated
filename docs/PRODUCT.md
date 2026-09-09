@@ -56,7 +56,7 @@ clerk in English, Kannada, or Hindi.
 
 ## Evidence on Hand
 
-- Product brief and safety boundary: `POSTDATED.md` and `CONTEXT.md`.
+- Product brief and safety boundary: `docs/POSTDATED.md` and `docs/CONTEXT.md`.
 - Hand-read Ombudsman repudiation-ground taxonomy: `docs/research/ombudsman-repudiation-grounds.md`.
 - Per-insurer policy parameters: `docs/research/policy-parameters.md`.
 - Forty fictional image-based evaluation cases and handwritten ground truth: `evals/corpus/`.
